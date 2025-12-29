@@ -1,7 +1,8 @@
-import { Database } from '@/data/mockBackupData';
+import { Database, formatNumber } from '@/data/mockBackupData';
 import { EnvironmentBadge } from './EnvironmentBadge';
 import { CheckCircle2, XCircle, Clock, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 interface DatabaseCardProps {
   database: Database;
@@ -29,11 +30,14 @@ export function DatabaseCard({ database, onClick, index }: DatabaseCardProps) {
     return `${days} ${days === 1 ? 'day' : 'days'}`;
   };
 
+  const progressPercent = (database.recordsBacked / database.totalRecords) * 100;
+  const isComplete = database.recordsBacked === database.totalRecords;
+
   return (
     <button
       onClick={onClick}
       className={cn(
-        'group w-full animate-fade-in rounded-lg border bg-card p-5 text-left transition-all duration-200 hover:bg-accent/50',
+        'group w-full animate-fade-in rounded-lg border bg-card p-5 text-left transition-all duration-200 hover:shadow-md',
         database.isBackedUpToday
           ? 'border-success/20 hover:border-success/40'
           : 'border-destructive/20 hover:border-destructive/40'
@@ -64,6 +68,26 @@ export function DatabaseCard({ database, onClick, index }: DatabaseCardProps) {
               {database.name}
             </h3>
             <EnvironmentBadge environment={database.environment} />
+          </div>
+
+          {/* Records Progress */}
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Records Backed</span>
+              <span className={cn(
+                'font-medium',
+                isComplete ? 'text-success' : 'text-warning'
+              )}>
+                {formatNumber(database.recordsBacked)} / {formatNumber(database.totalRecords)}
+              </span>
+            </div>
+            <Progress 
+              value={progressPercent} 
+              className={cn(
+                'h-1.5',
+                isComplete ? '[&>div]:bg-success' : '[&>div]:bg-warning'
+              )}
+            />
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">

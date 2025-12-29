@@ -11,6 +11,8 @@ export interface Database {
   lastBackupTimestamp: string | null;
   backupAgeHours: number | null;
   isBackedUpToday: boolean;
+  recordsBacked: number;
+  totalRecords: number;
   backupHistory: BackupAttempt[];
 }
 
@@ -21,10 +23,6 @@ function hoursAgo(hours: number): string {
   return new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
 }
 
-function daysAgo(days: number): string {
-  return new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
-}
-
 export const mockDatabases: Database[] = [
   {
     id: '1',
@@ -33,6 +31,8 @@ export const mockDatabases: Database[] = [
     lastBackupTimestamp: hoursAgo(2),
     backupAgeHours: 2,
     isBackedUpToday: true,
+    recordsBacked: 1250000,
+    totalRecords: 1250000,
     backupHistory: [
       { timestamp: hoursAgo(2), status: 'success' },
       { timestamp: hoursAgo(26), status: 'success' },
@@ -46,6 +46,8 @@ export const mockDatabases: Database[] = [
     lastBackupTimestamp: hoursAgo(4),
     backupAgeHours: 4,
     isBackedUpToday: true,
+    recordsBacked: 892450,
+    totalRecords: 892450,
     backupHistory: [
       { timestamp: hoursAgo(4), status: 'success' },
       { timestamp: hoursAgo(28), status: 'success' },
@@ -59,6 +61,8 @@ export const mockDatabases: Database[] = [
     lastBackupTimestamp: hoursAgo(1),
     backupAgeHours: 1,
     isBackedUpToday: true,
+    recordsBacked: 5680000,
+    totalRecords: 5680000,
     backupHistory: [
       { timestamp: hoursAgo(1), status: 'success' },
       { timestamp: hoursAgo(25), status: 'success' },
@@ -69,13 +73,15 @@ export const mockDatabases: Database[] = [
     id: '4',
     name: 'Loan Management System',
     environment: 'Production',
-    lastBackupTimestamp: daysAgo(2),
-    backupAgeHours: 48,
-    isBackedUpToday: false,
+    lastBackupTimestamp: hoursAgo(3),
+    backupAgeHours: 3,
+    isBackedUpToday: true,
+    recordsBacked: 345000,
+    totalRecords: 345000,
     backupHistory: [
-      { timestamp: hoursAgo(3), status: 'failed', errorMessage: 'Connection timeout to backup server' },
-      { timestamp: daysAgo(2), status: 'success' },
-      { timestamp: daysAgo(3), status: 'success' },
+      { timestamp: hoursAgo(3), status: 'success' },
+      { timestamp: hoursAgo(27), status: 'success' },
+      { timestamp: hoursAgo(51), status: 'success' },
     ],
   },
   {
@@ -85,6 +91,8 @@ export const mockDatabases: Database[] = [
     lastBackupTimestamp: hoursAgo(6),
     backupAgeHours: 6,
     isBackedUpToday: true,
+    recordsBacked: 1250000,
+    totalRecords: 1250000,
     backupHistory: [
       { timestamp: hoursAgo(6), status: 'success' },
       { timestamp: hoursAgo(30), status: 'success' },
@@ -95,13 +103,15 @@ export const mockDatabases: Database[] = [
     id: '6',
     name: 'Customer Accounts DB',
     environment: 'DR',
-    lastBackupTimestamp: daysAgo(1),
-    backupAgeHours: 28,
-    isBackedUpToday: false,
+    lastBackupTimestamp: hoursAgo(5),
+    backupAgeHours: 5,
+    isBackedUpToday: true,
+    recordsBacked: 892450,
+    totalRecords: 892450,
     backupHistory: [
-      { timestamp: hoursAgo(5), status: 'failed', errorMessage: 'Disk space insufficient on backup target' },
-      { timestamp: daysAgo(1), status: 'success' },
-      { timestamp: daysAgo(2), status: 'success' },
+      { timestamp: hoursAgo(5), status: 'success' },
+      { timestamp: hoursAgo(29), status: 'success' },
+      { timestamp: hoursAgo(53), status: 'success' },
     ],
   },
   {
@@ -111,6 +121,8 @@ export const mockDatabases: Database[] = [
     lastBackupTimestamp: hoursAgo(8),
     backupAgeHours: 8,
     isBackedUpToday: true,
+    recordsBacked: 5680000,
+    totalRecords: 5680000,
     backupHistory: [
       { timestamp: hoursAgo(8), status: 'success' },
       { timestamp: hoursAgo(32), status: 'success' },
@@ -124,6 +136,8 @@ export const mockDatabases: Database[] = [
     lastBackupTimestamp: hoursAgo(12),
     backupAgeHours: 12,
     isBackedUpToday: true,
+    recordsBacked: 156000,
+    totalRecords: 156000,
     backupHistory: [
       { timestamp: hoursAgo(12), status: 'success' },
       { timestamp: hoursAgo(36), status: 'success' },
@@ -134,13 +148,15 @@ export const mockDatabases: Database[] = [
     id: '9',
     name: 'Test Accounts DB',
     environment: 'UAT',
-    lastBackupTimestamp: daysAgo(3),
-    backupAgeHours: 72,
-    isBackedUpToday: false,
+    lastBackupTimestamp: hoursAgo(10),
+    backupAgeHours: 10,
+    isBackedUpToday: true,
+    recordsBacked: 78500,
+    totalRecords: 78500,
     backupHistory: [
-      { timestamp: hoursAgo(2), status: 'failed', errorMessage: 'Database locked by another process' },
-      { timestamp: hoursAgo(26), status: 'failed', errorMessage: 'Network unreachable' },
-      { timestamp: daysAgo(3), status: 'success' },
+      { timestamp: hoursAgo(10), status: 'success' },
+      { timestamp: hoursAgo(34), status: 'success' },
+      { timestamp: hoursAgo(58), status: 'success' },
     ],
   },
   {
@@ -150,6 +166,8 @@ export const mockDatabases: Database[] = [
     lastBackupTimestamp: hoursAgo(3),
     backupAgeHours: 3,
     isBackedUpToday: true,
+    recordsBacked: 2340000,
+    totalRecords: 2340000,
     backupHistory: [
       { timestamp: hoursAgo(3), status: 'success' },
       { timestamp: hoursAgo(27), status: 'success' },
@@ -164,4 +182,14 @@ export function getBackupStats(databases: Database[]) {
   const notBackedUp = total - backedUp;
   
   return { total, backedUp, notBackedUp };
+}
+
+export function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(0) + 'K';
+  }
+  return num.toString();
 }
