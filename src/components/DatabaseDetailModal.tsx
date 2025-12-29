@@ -1,8 +1,9 @@
-import { Database, BackupAttempt } from '@/data/mockBackupData';
+import { Database, BackupAttempt, formatNumber } from '@/data/mockBackupData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EnvironmentBadge } from './EnvironmentBadge';
 import { CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 interface DatabaseDetailModalProps {
   database: Database | null;
@@ -13,17 +14,8 @@ interface DatabaseDetailModalProps {
 export function DatabaseDetailModal({ database, open, onOpenChange }: DatabaseDetailModalProps) {
   if (!database) return null;
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-  };
+  const progressPercent = (database.recordsBacked / database.totalRecords) * 100;
+  const isComplete = database.recordsBacked === database.totalRecords;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -52,6 +44,29 @@ export function DatabaseDetailModal({ database, open, onOpenChange }: DatabaseDe
             <span className="text-lg font-semibold">
               {database.isBackedUpToday ? 'Backed Up Today' : 'Not Backed Up Today'}
             </span>
+          </div>
+
+          {/* Records Progress */}
+          <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-foreground">Backup Progress</span>
+              <span className={cn(
+                'text-sm font-semibold',
+                isComplete ? 'text-success' : 'text-warning'
+              )}>
+                {progressPercent.toFixed(0)}% Complete
+              </span>
+            </div>
+            <Progress 
+              value={progressPercent} 
+              className={cn(
+                'h-2.5',
+                isComplete ? '[&>div]:bg-success' : '[&>div]:bg-warning'
+              )}
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              {formatNumber(database.recordsBacked)} of {formatNumber(database.totalRecords)} records backed up
+            </p>
           </div>
 
           <div className="mt-6">
