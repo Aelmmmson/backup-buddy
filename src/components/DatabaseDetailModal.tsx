@@ -1,7 +1,7 @@
 import { Database, BackupAttempt, formatNumber } from '@/data/mockBackupData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EnvironmentBadge } from './EnvironmentBadge';
-import { CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, AlertCircle, AlertTriangle, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 
@@ -11,11 +11,92 @@ interface DatabaseDetailModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function PhaseDetailCard({ phase, label }: { phase: Database['preUpdate']; label: string }) {
+  const isComplete = phase.status === 'success' && phase.recordsBacked === phase.totalRecords;
+  const isIncomplete = phase.status === 'success' && phase.recordsBacked < phase.totalRecords;
+  const isFailed = phase.status === 'failed';
+  const isPending = phase.status === 'pending';
+  
+  const progressPercent = phase.totalRecords > 0 ? (phase.recordsBacked / phase.totalRecords) * 100 : 0;
+
+  const formatTimestamp = (timestamp: string | null) => {
+    if (!timestamp) return 'N/A';
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getBgClass = () => {
+    if (isComplete) return 'bg-success/10 border-success/20';
+    if (isFailed) return 'bg-destructive/10 border-destructive/20';
+    if (isPending) return 'bg-muted/50 border-border';
+    return 'bg-warning/10 border-warning/20';
+  };
+
+  const getStatusIcon = () => {
+    if (isComplete) return <CheckCircle2 className="h-5 w-5 text-success" />;
+    if (isFailed) return <XCircle className="h-5 w-5 text-destructive" />;
+    if (isPending) return <Minus className="h-5 w-5 text-muted-foreground" />;
+    return <AlertTriangle className="h-5 w-5 text-warning" />;
+  };
+
+  const getStatusLabel = () => {
+    if (isComplete) return 'Complete';
+    if (isFailed) return 'Failed';
+    if (isPending) return 'Pending';
+    return 'Incomplete';
+  };
+
+  return (
+    <div className={cn('rounded-lg border p-4', getBgClass())}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-semibold text-foreground">{label}</span>
+        <div className="flex items-center gap-1.5">
+          {getStatusIcon()}
+          <span className={cn(
+            'text-sm font-semibold',
+            isComplete ? 'text-success' : isFailed ? 'text-destructive' : isPending ? 'text-muted-foreground' : 'text-warning'
+          )}>
+            {getStatusLabel()}
+          </span>
+        </div>
+      </div>
+      
+      <Progress 
+        value={progressPercent} 
+        className={cn(
+          'h-2 mb-2',
+          isComplete ? '[&>div]:bg-success' : isFailed ? '[&>div]:bg-destructive' : isPending ? '[&>div]:bg-muted' : '[&>div]:bg-warning'
+        )}
+      />
+      
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">
+          {formatNumber(phase.recordsBacked)} / {formatNumber(phase.totalRecords)} records
+        </span>
+        <span className={cn(
+          'font-medium',
+          isComplete ? 'text-success' : isFailed ? 'text-destructive' : isPending ? 'text-muted-foreground' : 'text-warning'
+        )}>
+          {progressPercent.toFixed(0)}%
+        </span>
+      </div>
+      
+      <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+        <Clock className="h-3 w-3" />
+        <span>{formatTimestamp(phase.lastBackupTimestamp)}</span>
+      </div>
+    </div>
+  );
+}
+
 export function DatabaseDetailModal({ database, open, onOpenChange }: DatabaseDetailModalProps) {
   if (!database) return null;
-
-  const progressPercent = (database.recordsBacked / database.totalRecords) * 100;
-  const isComplete = database.recordsBacked === database.totalRecords;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -27,48 +108,14 @@ export function DatabaseDetailModal({ database, open, onOpenChange }: DatabaseDe
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mt-4">
-          <div
-            className={cn(
-              'flex items-center gap-3 rounded-lg p-4',
-              database.isBackedUpToday
-                ? 'bg-success/10 text-success'
-                : 'bg-destructive/10 text-destructive'
-            )}
-          >
-            {database.isBackedUpToday ? (
-              <CheckCircle2 className="h-6 w-6" />
-            ) : (
-              <XCircle className="h-6 w-6" />
-            )}
-            <span className="text-lg font-semibold">
-              {database.isBackedUpToday ? 'Backed Up Today' : 'Not Backed Up Today'}
-            </span>
+        <div className="mt-4 space-y-4">
+          {/* Pre-Update and Post-Update Cards */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <PhaseDetailCard phase={database.preUpdate} label="Pre-Update Backup" />
+            <PhaseDetailCard phase={database.postUpdate} label="Post-Update Backup" />
           </div>
 
-          {/* Records Progress */}
-          <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-foreground">Backup Progress</span>
-              <span className={cn(
-                'text-sm font-semibold',
-                isComplete ? 'text-success' : 'text-warning'
-              )}>
-                {progressPercent.toFixed(0)}% Complete
-              </span>
-            </div>
-            <Progress 
-              value={progressPercent} 
-              className={cn(
-                'h-2.5',
-                isComplete ? '[&>div]:bg-success' : '[&>div]:bg-warning'
-              )}
-            />
-            <p className="text-sm text-muted-foreground mt-2">
-              {formatNumber(database.recordsBacked)} of {formatNumber(database.totalRecords)} records backed up
-            </p>
-          </div>
-
+          {/* Backup History */}
           <div className="mt-6">
             <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Last 3 Backup Attempts
