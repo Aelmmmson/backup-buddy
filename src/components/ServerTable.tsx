@@ -82,10 +82,29 @@ export function ServerTable({ databases, onRowClick }: ServerTableProps) {
 
   const formatAge = (hours: number | null) => {
     if (hours === null) return <span className="italic text-muted-foreground/60">—</span>;
-    if (hours < 1) return '< 1h';
-    if (hours < 24) return `${hours}h`;
-    const days = Math.floor(hours / 24);
-    return `${days}d`;
+    
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60);
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+    
+    const wholeHours = Math.floor(hours);
+    const remainingMinutes = Math.round((hours - wholeHours) * 60);
+    
+    if (wholeHours < 24) {
+      if (remainingMinutes === 0) {
+        return `${wholeHours} hour${wholeHours !== 1 ? 's' : ''}`;
+      }
+      return `${wholeHours} hour${wholeHours !== 1 ? 's' : ''} ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}`;
+    }
+    
+    const days = Math.floor(wholeHours / 24);
+    const remainingHours = wholeHours % 24;
+    
+    if (remainingHours === 0) {
+      return `${days} day${days !== 1 ? 's' : ''}`;
+    }
+    return `${days} day${days !== 1 ? 's' : ''} ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}`;
   };
 
   return (
