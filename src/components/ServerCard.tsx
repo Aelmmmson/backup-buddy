@@ -1,6 +1,6 @@
-import { Database, formatNumber } from '@/data/mockBackupData';
+import { Database, formatNumber, getServerOverallStatus } from '@/data/mockBackupData';
 import { EnvironmentBadge } from './EnvironmentBadge';
-import { CheckCircle2, XCircle, Clock, ChevronRight, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, ChevronRight, AlertTriangle, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 
@@ -8,6 +8,54 @@ interface ServerCardProps {
   database: Database;
   onClick: () => void;
   index: number;
+}
+
+function PhaseStatus({ phase, label }: { phase: Database['preUpdate']; label: string }) {
+  const isComplete = phase.status === 'success' && phase.recordsBacked === phase.totalRecords;
+  const isIncomplete = phase.status === 'success' && phase.recordsBacked < phase.totalRecords;
+  const isFailed = phase.status === 'failed';
+  const isPending = phase.status === 'pending';
+  
+  const progressPercent = phase.totalRecords > 0 ? (phase.recordsBacked / phase.totalRecords) * 100 : 0;
+
+  const getStatusIcon = () => {
+    if (isComplete) return <CheckCircle2 className="h-4 w-4 text-success" />;
+    if (isFailed) return <XCircle className="h-4 w-4 text-destructive" />;
+    if (isPending) return <Minus className="h-4 w-4 text-muted-foreground" />;
+    return <AlertTriangle className="h-4 w-4 text-warning" />;
+  };
+
+  const getStatusLabel = () => {
+    if (isComplete) return 'Complete';
+    if (isFailed) return 'Failed';
+    if (isPending) return 'Pending';
+    return 'Incomplete';
+  };
+
+  return (
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        {getStatusIcon()}
+        <span className="text-xs font-medium text-foreground">{label}</span>
+        <span className={cn(
+          'text-xs font-semibold ml-auto',
+          isComplete ? 'text-success' : isFailed ? 'text-destructive' : isPending ? 'text-muted-foreground' : 'text-warning'
+        )}>
+          {getStatusLabel()}
+        </span>
+      </div>
+      <Progress 
+        value={progressPercent} 
+        className={cn(
+          'h-1.5',
+          isComplete ? '[&>div]:bg-success' : isFailed ? '[&>div]:bg-destructive' : isPending ? '[&>div]:bg-muted' : '[&>div]:bg-warning'
+        )}
+      />
+      <p className="text-xs text-muted-foreground mt-1">
+        {formatNumber(phase.recordsBacked)} / {formatNumber(phase.totalRecords)}
+      </p>
+    </div>
+  );
 }
 
 export function ServerCard({ database, onClick, index }: ServerCardProps) {
@@ -30,38 +78,35 @@ export function ServerCard({ database, onClick, index }: ServerCardProps) {
     return `${days} ${days === 1 ? 'day' : 'days'}`;
   };
 
-  const progressPercent = database.totalRecords > 0 
-    ? (database.recordsBacked / database.totalRecords) * 100 
-    : 0;
-  const isComplete = database.recordsBacked === database.totalRecords;
-  const isIncomplete = database.isBackedUpToday && !isComplete;
-
+  const overallStatus = getServerOverallStatus(database);
+  
   const getStatusInfo = () => {
-    if (!database.isBackedUpToday) {
-      return {
-        label: 'Not Backed Up Today',
-        icon: XCircle,
-        colorClass: 'text-destructive',
-        bgClass: 'bg-destructive/10 text-destructive',
-        borderClass: 'border-destructive/20 hover:border-destructive/40',
-      };
+    switch (overallStatus) {
+      case 'failed':
+        return {
+          label: 'Backup Failed',
+          icon: XCircle,
+          colorClass: 'text-destructive',
+          bgClass: 'bg-destructive/10 text-destructive',
+          borderClass: 'border-destructive/20 hover:border-destructive/40',
+        };
+      case 'warning':
+        return {
+          label: 'Backup Incomplete',
+          icon: AlertTriangle,
+          colorClass: 'text-warning',
+          bgClass: 'bg-warning/10 text-warning',
+          borderClass: 'border-warning/20 hover:border-warning/40',
+        };
+      default:
+        return {
+          label: 'Fully Backed Up',
+          icon: CheckCircle2,
+          colorClass: 'text-success',
+          bgClass: 'bg-success/10 text-success',
+          borderClass: 'border-success/20 hover:border-success/40',
+        };
     }
-    if (isIncomplete) {
-      return {
-        label: 'Backup Incomplete',
-        icon: AlertTriangle,
-        colorClass: 'text-warning',
-        bgClass: 'bg-warning/10 text-warning',
-        borderClass: 'border-warning/20 hover:border-warning/40',
-      };
-    }
-    return {
-      label: 'Backed Up Today',
-      icon: CheckCircle2,
-      colorClass: 'text-success',
-      bgClass: 'bg-success/10 text-success',
-      borderClass: 'border-success/20 hover:border-success/40',
-    };
   };
 
   const status = getStatusInfo();
@@ -84,45 +129,31 @@ export function ServerCard({ database, onClick, index }: ServerCardProps) {
             status.bgClass
           )}
         >
-          <StatusIcon className={cn('h-6 w-6', !database.isBackedUpToday && 'animate-pulse-slow')} />
+          <StatusIcon className={cn('h-6 w-6', overallStatus === 'failed' && 'animate-pulse-slow')} />
         </div>
 
         {/* Main Content */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-3">
             <h3 className="truncate text-lg font-semibold text-foreground">
               {database.name}
             </h3>
             <EnvironmentBadge environment={database.environment} />
-          </div>
-
-          {/* Records Progress */}
-          <div className="mt-2 space-y-1">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Records Backed</span>
-              <span className={cn(
-                'font-medium',
-                isComplete ? 'text-success' : isIncomplete ? 'text-warning' : 'text-destructive'
-              )}>
-                {formatNumber(database.recordsBacked)} / {formatNumber(database.totalRecords)}
-              </span>
-            </div>
-            <Progress 
-              value={progressPercent} 
-              className={cn(
-                'h-1.5',
-                isComplete ? '[&>div]:bg-success' : isIncomplete ? '[&>div]:bg-warning' : '[&>div]:bg-destructive'
-              )}
-            />
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span className={cn('font-semibold', status.colorClass)}>
+            <span className={cn('ml-auto text-sm font-semibold', status.colorClass)}>
               {status.label}
             </span>
+          </div>
+
+          {/* Pre-Update and Post-Update Progress */}
+          <div className="flex gap-6">
+            <PhaseStatus phase={database.preUpdate} label="Pre-Update" />
+            <PhaseStatus phase={database.postUpdate} label="Post-Update" />
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
-              {formatTimestamp(database.lastBackupTimestamp)}
+              Last: {formatTimestamp(database.postUpdate.lastBackupTimestamp || database.preUpdate.lastBackupTimestamp)}
             </span>
             <span className="text-muted-foreground/70">
               Age: {formatAge(database.backupAgeHours)}

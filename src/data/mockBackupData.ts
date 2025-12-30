@@ -4,15 +4,20 @@ export interface BackupAttempt {
   errorMessage?: string;
 }
 
+export interface BackupPhase {
+  status: 'success' | 'failed' | 'pending';
+  recordsBacked: number;
+  totalRecords: number;
+  lastBackupTimestamp: string | null;
+}
+
 export interface Database {
   id: string;
   name: string;
   environment: 'Production' | 'DR' | 'UAT';
-  lastBackupTimestamp: string | null;
+  preUpdate: BackupPhase;
+  postUpdate: BackupPhase;
   backupAgeHours: number | null;
-  isBackedUpToday: boolean;
-  recordsBacked: number;
-  totalRecords: number;
   backupHistory: BackupAttempt[];
 }
 
@@ -27,41 +32,65 @@ export const mockDatabases: Database[] = [
     id: '1',
     name: 'Core Banking System',
     environment: 'Production',
-    lastBackupTimestamp: hoursAgo(2),
-    backupAgeHours: 2,
-    isBackedUpToday: true,
-    recordsBacked: 1250000,
-    totalRecords: 1250000,
+    preUpdate: {
+      status: 'success',
+      recordsBacked: 1250000,
+      totalRecords: 1250000,
+      lastBackupTimestamp: hoursAgo(2),
+    },
+    postUpdate: {
+      status: 'success',
+      recordsBacked: 1250000,
+      totalRecords: 1250000,
+      lastBackupTimestamp: hoursAgo(1),
+    },
+    backupAgeHours: 1,
     backupHistory: [
+      { timestamp: hoursAgo(1), status: 'success' },
       { timestamp: hoursAgo(2), status: 'success' },
       { timestamp: hoursAgo(26), status: 'success' },
-      { timestamp: hoursAgo(50), status: 'success' },
     ],
   },
   {
     id: '2',
     name: 'Customer Accounts DB',
     environment: 'Production',
-    lastBackupTimestamp: hoursAgo(4),
-    backupAgeHours: 4,
-    isBackedUpToday: true,
-    recordsBacked: 750000,
-    totalRecords: 892450,
+    preUpdate: {
+      status: 'success',
+      recordsBacked: 892450,
+      totalRecords: 892450,
+      lastBackupTimestamp: hoursAgo(4),
+    },
+    postUpdate: {
+      status: 'failed',
+      recordsBacked: 750000,
+      totalRecords: 892450,
+      lastBackupTimestamp: hoursAgo(3),
+    },
+    backupAgeHours: 3,
     backupHistory: [
+      { timestamp: hoursAgo(3), status: 'failed', errorMessage: 'Incomplete transfer - network interruption' },
       { timestamp: hoursAgo(4), status: 'success' },
       { timestamp: hoursAgo(28), status: 'success' },
-      { timestamp: hoursAgo(52), status: 'success' },
     ],
   },
   {
     id: '3',
     name: 'Transaction Ledger',
     environment: 'Production',
-    lastBackupTimestamp: hoursAgo(28),
+    preUpdate: {
+      status: 'failed',
+      recordsBacked: 0,
+      totalRecords: 5680000,
+      lastBackupTimestamp: null,
+    },
+    postUpdate: {
+      status: 'pending',
+      recordsBacked: 0,
+      totalRecords: 5680000,
+      lastBackupTimestamp: null,
+    },
     backupAgeHours: 28,
-    isBackedUpToday: false,
-    recordsBacked: 0,
-    totalRecords: 5680000,
     backupHistory: [
       { timestamp: hoursAgo(28), status: 'failed', errorMessage: 'Connection timeout to primary storage' },
       { timestamp: hoursAgo(52), status: 'success' },
@@ -72,41 +101,65 @@ export const mockDatabases: Database[] = [
     id: '4',
     name: 'Loan Management System',
     environment: 'Production',
-    lastBackupTimestamp: hoursAgo(3),
-    backupAgeHours: 3,
-    isBackedUpToday: true,
-    recordsBacked: 345000,
-    totalRecords: 345000,
+    preUpdate: {
+      status: 'success',
+      recordsBacked: 345000,
+      totalRecords: 345000,
+      lastBackupTimestamp: hoursAgo(3),
+    },
+    postUpdate: {
+      status: 'success',
+      recordsBacked: 345000,
+      totalRecords: 345000,
+      lastBackupTimestamp: hoursAgo(2),
+    },
+    backupAgeHours: 2,
     backupHistory: [
+      { timestamp: hoursAgo(2), status: 'success' },
       { timestamp: hoursAgo(3), status: 'success' },
       { timestamp: hoursAgo(27), status: 'success' },
-      { timestamp: hoursAgo(51), status: 'success' },
     ],
   },
   {
     id: '5',
     name: 'Core Banking System',
     environment: 'DR',
-    lastBackupTimestamp: hoursAgo(6),
-    backupAgeHours: 6,
-    isBackedUpToday: true,
-    recordsBacked: 980000,
-    totalRecords: 1250000,
+    preUpdate: {
+      status: 'success',
+      recordsBacked: 1250000,
+      totalRecords: 1250000,
+      lastBackupTimestamp: hoursAgo(6),
+    },
+    postUpdate: {
+      status: 'success',
+      recordsBacked: 980000,
+      totalRecords: 1250000,
+      lastBackupTimestamp: hoursAgo(5),
+    },
+    backupAgeHours: 5,
     backupHistory: [
+      { timestamp: hoursAgo(5), status: 'success' },
       { timestamp: hoursAgo(6), status: 'success' },
       { timestamp: hoursAgo(30), status: 'success' },
-      { timestamp: hoursAgo(54), status: 'success' },
     ],
   },
   {
     id: '6',
     name: 'Customer Accounts DB',
     environment: 'DR',
-    lastBackupTimestamp: hoursAgo(30),
+    preUpdate: {
+      status: 'failed',
+      recordsBacked: 0,
+      totalRecords: 892450,
+      lastBackupTimestamp: null,
+    },
+    postUpdate: {
+      status: 'pending',
+      recordsBacked: 0,
+      totalRecords: 892450,
+      lastBackupTimestamp: null,
+    },
     backupAgeHours: 30,
-    isBackedUpToday: false,
-    recordsBacked: 0,
-    totalRecords: 892450,
     backupHistory: [
       { timestamp: hoursAgo(30), status: 'failed', errorMessage: 'Insufficient disk space on backup volume' },
       { timestamp: hoursAgo(54), status: 'failed', errorMessage: 'Network partition detected' },
@@ -117,41 +170,65 @@ export const mockDatabases: Database[] = [
     id: '7',
     name: 'Transaction Ledger',
     environment: 'DR',
-    lastBackupTimestamp: hoursAgo(8),
-    backupAgeHours: 8,
-    isBackedUpToday: true,
-    recordsBacked: 5680000,
-    totalRecords: 5680000,
+    preUpdate: {
+      status: 'success',
+      recordsBacked: 5680000,
+      totalRecords: 5680000,
+      lastBackupTimestamp: hoursAgo(8),
+    },
+    postUpdate: {
+      status: 'success',
+      recordsBacked: 5680000,
+      totalRecords: 5680000,
+      lastBackupTimestamp: hoursAgo(7),
+    },
+    backupAgeHours: 7,
     backupHistory: [
+      { timestamp: hoursAgo(7), status: 'success' },
       { timestamp: hoursAgo(8), status: 'success' },
       { timestamp: hoursAgo(32), status: 'success' },
-      { timestamp: hoursAgo(56), status: 'success' },
     ],
   },
   {
     id: '8',
     name: 'Core Banking System',
     environment: 'UAT',
-    lastBackupTimestamp: hoursAgo(12),
-    backupAgeHours: 12,
-    isBackedUpToday: true,
-    recordsBacked: 120000,
-    totalRecords: 156000,
+    preUpdate: {
+      status: 'success',
+      recordsBacked: 156000,
+      totalRecords: 156000,
+      lastBackupTimestamp: hoursAgo(12),
+    },
+    postUpdate: {
+      status: 'success',
+      recordsBacked: 120000,
+      totalRecords: 156000,
+      lastBackupTimestamp: hoursAgo(11),
+    },
+    backupAgeHours: 11,
     backupHistory: [
+      { timestamp: hoursAgo(11), status: 'success' },
       { timestamp: hoursAgo(12), status: 'success' },
       { timestamp: hoursAgo(36), status: 'success' },
-      { timestamp: hoursAgo(60), status: 'success' },
     ],
   },
   {
     id: '9',
     name: 'Test Accounts DB',
     environment: 'UAT',
-    lastBackupTimestamp: hoursAgo(36),
+    preUpdate: {
+      status: 'failed',
+      recordsBacked: 0,
+      totalRecords: 78500,
+      lastBackupTimestamp: null,
+    },
+    postUpdate: {
+      status: 'pending',
+      recordsBacked: 0,
+      totalRecords: 78500,
+      lastBackupTimestamp: null,
+    },
     backupAgeHours: 36,
-    isBackedUpToday: false,
-    recordsBacked: 0,
-    totalRecords: 78500,
     backupHistory: [
       { timestamp: hoursAgo(36), status: 'failed', errorMessage: 'Authentication credentials expired' },
       { timestamp: hoursAgo(60), status: 'success' },
@@ -162,26 +239,57 @@ export const mockDatabases: Database[] = [
     id: '10',
     name: 'Reporting Warehouse',
     environment: 'Production',
-    lastBackupTimestamp: hoursAgo(3),
-    backupAgeHours: 3,
-    isBackedUpToday: true,
-    recordsBacked: 1800000,
-    totalRecords: 2340000,
+    preUpdate: {
+      status: 'success',
+      recordsBacked: 2340000,
+      totalRecords: 2340000,
+      lastBackupTimestamp: hoursAgo(3),
+    },
+    postUpdate: {
+      status: 'success',
+      recordsBacked: 1800000,
+      totalRecords: 2340000,
+      lastBackupTimestamp: hoursAgo(2),
+    },
+    backupAgeHours: 2,
     backupHistory: [
+      { timestamp: hoursAgo(2), status: 'success' },
       { timestamp: hoursAgo(3), status: 'success' },
       { timestamp: hoursAgo(27), status: 'success' },
-      { timestamp: hoursAgo(51), status: 'success' },
     ],
   },
 ];
 
 export function getBackupStats(databases: Database[]) {
   const total = databases.length;
-  const backedUp = databases.filter(db => db.isBackedUpToday).length;
-  const notBackedUp = total - backedUp;
-  const incomplete = databases.filter(db => db.isBackedUpToday && db.recordsBacked < db.totalRecords).length;
   
-  return { total, backedUp, notBackedUp, incomplete };
+  // Pre-Update stats
+  const preUpdateSuccess = databases.filter(db => db.preUpdate.status === 'success' && db.preUpdate.recordsBacked === db.preUpdate.totalRecords).length;
+  const preUpdateIncomplete = databases.filter(db => db.preUpdate.status === 'success' && db.preUpdate.recordsBacked < db.preUpdate.totalRecords).length;
+  const preUpdateFailed = databases.filter(db => db.preUpdate.status === 'failed').length;
+  
+  // Post-Update stats
+  const postUpdateSuccess = databases.filter(db => db.postUpdate.status === 'success' && db.postUpdate.recordsBacked === db.postUpdate.totalRecords).length;
+  const postUpdateIncomplete = databases.filter(db => db.postUpdate.status === 'success' && db.postUpdate.recordsBacked < db.postUpdate.totalRecords).length;
+  const postUpdateFailed = databases.filter(db => db.postUpdate.status === 'failed' || db.postUpdate.status === 'pending').length;
+  
+  // Overall stats
+  const fullyBacked = databases.filter(db => 
+    db.preUpdate.status === 'success' && 
+    db.postUpdate.status === 'success' && 
+    db.preUpdate.recordsBacked === db.preUpdate.totalRecords &&
+    db.postUpdate.recordsBacked === db.postUpdate.totalRecords
+  ).length;
+  
+  const hasIssues = total - fullyBacked;
+  
+  return { 
+    total, 
+    fullyBacked,
+    hasIssues,
+    preUpdate: { success: preUpdateSuccess, incomplete: preUpdateIncomplete, failed: preUpdateFailed },
+    postUpdate: { success: postUpdateSuccess, incomplete: postUpdateIncomplete, failed: postUpdateFailed }
+  };
 }
 
 export function formatNumber(num: number): string {
@@ -192,4 +300,13 @@ export function formatNumber(num: number): string {
     return (num / 1000).toFixed(0) + 'K';
   }
   return num.toString();
+}
+
+export function getServerOverallStatus(db: Database): 'success' | 'warning' | 'failed' {
+  const preComplete = db.preUpdate.status === 'success' && db.preUpdate.recordsBacked === db.preUpdate.totalRecords;
+  const postComplete = db.postUpdate.status === 'success' && db.postUpdate.recordsBacked === db.postUpdate.totalRecords;
+  
+  if (preComplete && postComplete) return 'success';
+  if (db.preUpdate.status === 'failed' || db.postUpdate.status === 'failed') return 'failed';
+  return 'warning';
 }

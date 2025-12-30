@@ -7,14 +7,16 @@ interface SummaryCardProps {
   icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
+  compact?: boolean;
 }
 
-export function SummaryCard({ title, value, variant = 'default', icon, active, onClick }: SummaryCardProps) {
+export function SummaryCard({ title, value, variant = 'default', icon, active, onClick, compact = false }: SummaryCardProps) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        'relative overflow-hidden rounded-lg border bg-card p-6 transition-all duration-300 hover:scale-[1.02] text-left w-full',
+        'relative overflow-hidden rounded-lg border bg-card transition-all duration-300 hover:scale-[1.02] text-left w-full',
+        compact ? 'p-4' : 'p-6',
         variant === 'success' && 'border-success/30',
         variant === 'danger' && 'border-destructive/30',
         variant === 'warning' && 'border-warning/30',
@@ -27,10 +29,14 @@ export function SummaryCard({ title, value, variant = 'default', icon, active, o
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className={cn(
+            'font-medium text-muted-foreground',
+            compact ? 'text-xs' : 'text-sm'
+          )}>{title}</p>
           <p
             className={cn(
-              'mt-2 text-4xl font-bold tracking-tight',
+              'font-bold tracking-tight',
+              compact ? 'mt-1 text-2xl' : 'mt-2 text-4xl',
               variant === 'success' && 'text-success',
               variant === 'danger' && 'text-destructive',
               variant === 'warning' && 'text-warning',
@@ -42,7 +48,8 @@ export function SummaryCard({ title, value, variant = 'default', icon, active, o
         </div>
         <div
           className={cn(
-            'flex h-14 w-14 items-center justify-center rounded-full',
+            'flex items-center justify-center rounded-full',
+            compact ? 'h-10 w-10' : 'h-14 w-14',
             variant === 'success' && 'bg-success/10 text-success',
             variant === 'danger' && 'bg-destructive/10 text-destructive',
             variant === 'warning' && 'bg-warning/10 text-warning',
