@@ -6,10 +6,10 @@ import { ServerCard } from '@/components/ServerCard';
 import { ServerTable } from '@/components/ServerTable';
 import { DatabaseDetailModal } from '@/components/DatabaseDetailModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Server, CheckCircle2, XCircle, AlertTriangle, Shield, LayoutGrid, Table } from 'lucide-react';
+import { Server, CheckCircle2, XCircle, Shield, LayoutGrid, Table } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type FilterType = 'all' | 'backed' | 'preSuccess' | 'preFailed' | 'postSuccess' | 'postFailed';
+type FilterType = 'all' | 'backed' | 'issues';
 type ViewType = 'cards' | 'table';
 
 const Index = () => {
@@ -29,14 +29,12 @@ const Index = () => {
           db.preUpdate.recordsBacked === db.preUpdate.totalRecords &&
           db.postUpdate.recordsBacked === db.postUpdate.totalRecords
         );
-      case 'preSuccess':
-        return mockDatabases.filter(db => db.preUpdate.status === 'success');
-      case 'preFailed':
-        return mockDatabases.filter(db => db.preUpdate.status === 'failed' || (db.preUpdate.status === 'success' && db.preUpdate.recordsBacked < db.preUpdate.totalRecords));
-      case 'postSuccess':
-        return mockDatabases.filter(db => db.postUpdate.status === 'success');
-      case 'postFailed':
-        return mockDatabases.filter(db => db.postUpdate.status === 'failed' || db.postUpdate.status === 'pending' || (db.postUpdate.status === 'success' && db.postUpdate.recordsBacked < db.postUpdate.totalRecords));
+      case 'issues':
+        return mockDatabases.filter(db => {
+          const preComplete = db.preUpdate.status === 'success' && db.preUpdate.recordsBacked === db.preUpdate.totalRecords;
+          const postComplete = db.postUpdate.status === 'success' && db.postUpdate.recordsBacked === db.postUpdate.totalRecords;
+          return !(preComplete && postComplete);
+        });
       default:
         return mockDatabases;
     }
@@ -49,6 +47,17 @@ const Index = () => {
 
   const handleFilterClick = (newFilter: FilterType) => {
     setFilter(filter === newFilter ? 'all' : newFilter);
+  };
+
+  // Calculate pre/post stats for cards
+  const preUpdateStats = {
+    success: stats.preUpdate.success,
+    issues: stats.preUpdate.failed + stats.preUpdate.incomplete
+  };
+  
+  const postUpdateStats = {
+    success: stats.postUpdate.success,
+    issues: stats.postUpdate.failed + stats.postUpdate.incomplete
   };
 
   return (
@@ -76,8 +85,7 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Summary Section */}
         <section className="mb-8">
-          {/* Main Stats */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <SummaryCard
               title="Total Servers"
               value={stats.total}
@@ -85,6 +93,8 @@ const Index = () => {
               icon={<Server className="h-6 w-6" />}
               active={filter === 'all'}
               onClick={() => handleFilterClick('all')}
+              preUpdate={preUpdateStats}
+              postUpdate={postUpdateStats}
             />
             <SummaryCard
               title="Fully Backed Up"
@@ -99,53 +109,18 @@ const Index = () => {
               value={stats.hasIssues}
               variant={stats.hasIssues > 0 ? 'danger' : 'default'}
               icon={<XCircle className="h-6 w-6" />}
-              active={false}
-            />
-          </div>
-          
-          {/* Pre-Update / Post-Update Stats */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <SummaryCard
-              title="Pre-Update Success"
-              value={stats.preUpdate.success}
-              variant="success"
-              icon={<CheckCircle2 className="h-5 w-5" />}
-              active={filter === 'preSuccess'}
-              onClick={() => handleFilterClick('preSuccess')}
-              compact
-            />
-            <SummaryCard
-              title="Pre-Update Issues"
-              value={stats.preUpdate.failed + stats.preUpdate.incomplete}
-              variant={stats.preUpdate.failed + stats.preUpdate.incomplete > 0 ? 'danger' : 'default'}
-              icon={<XCircle className="h-5 w-5" />}
-              active={filter === 'preFailed'}
-              onClick={() => handleFilterClick('preFailed')}
-              compact
-            />
-            <SummaryCard
-              title="Post-Update Success"
-              value={stats.postUpdate.success}
-              variant="success"
-              icon={<CheckCircle2 className="h-5 w-5" />}
-              active={filter === 'postSuccess'}
-              onClick={() => handleFilterClick('postSuccess')}
-              compact
-            />
-            <SummaryCard
-              title="Post-Update Issues"
-              value={stats.postUpdate.failed + stats.postUpdate.incomplete}
-              variant={stats.postUpdate.failed + stats.postUpdate.incomplete > 0 ? 'warning' : 'default'}
-              icon={<AlertTriangle className="h-5 w-5" />}
-              active={filter === 'postFailed'}
-              onClick={() => handleFilterClick('postFailed')}
-              compact
+              active={filter === 'issues'}
+              onClick={() => handleFilterClick('issues')}
             />
           </div>
         </section>
 
         {/* Warning Banner */}
-        <WarningBanner count={stats.hasIssues} />
+        <WarningBanner 
+          count={stats.hasIssues} 
+          active={filter === 'issues'}
+          onClick={() => handleFilterClick('issues')}
+        />
 
         {/* Server List */}
         <section>
