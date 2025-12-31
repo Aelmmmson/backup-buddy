@@ -1,11 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useCounter } from '@/hooks/useCounter';
 
-interface PhaseStats {
-  success: number;
-  issues: number;
-}
-
 interface SummaryCardProps {
   title: string;
   value: number;
@@ -13,20 +8,7 @@ interface SummaryCardProps {
   icon: React.ReactNode;
   active?: boolean;
   onClick?: () => void;
-  preUpdate?: PhaseStats;
-  postUpdate?: PhaseStats;
-}
-
-function MiniStat({ label, success, issues }: { label: string; success: number; issues: number }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">{label}</span>
-      <div className="flex items-center gap-2 text-xs">
-        <span className="text-success font-medium">{success} ✓</span>
-        {issues > 0 && <span className="text-destructive font-medium">{issues} ✗</span>}
-      </div>
-    </div>
-  );
+  subtitle?: string;
 }
 
 export function SummaryCard({ 
@@ -36,8 +18,7 @@ export function SummaryCard({
   icon, 
   active, 
   onClick,
-  preUpdate,
-  postUpdate
+  subtitle
 }: SummaryCardProps) {
   const animatedValue = useCounter(value, 800);
   
@@ -71,12 +52,11 @@ export function SummaryCard({
             {animatedValue}
           </p>
           
-          {/* Pre/Post Update mini stats */}
-          {(preUpdate || postUpdate) && (
-            <div className="mt-3 flex gap-4 pt-3 border-t border-border/50">
-              {preUpdate && <MiniStat label="Pre-Update" success={preUpdate.success} issues={preUpdate.issues} />}
-              {postUpdate && <MiniStat label="Post-Update" success={postUpdate.success} issues={postUpdate.issues} />}
-            </div>
+          {/* Subtitle */}
+          {subtitle && (
+            <p className="mt-2 text-xs text-muted-foreground italic">
+              {subtitle}
+            </p>
           )}
         </div>
         <div
