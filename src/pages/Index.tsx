@@ -6,10 +6,10 @@ import { ServerCard } from '@/components/ServerCard';
 import { ServerTable } from '@/components/ServerTable';
 import { DatabaseDetailModal } from '@/components/DatabaseDetailModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Server, CheckCircle2, XCircle, Shield, LayoutGrid, Table } from 'lucide-react';
+import { Server, ArrowDownToLine, ArrowUpFromLine, Clock, Shield, LayoutGrid, Table } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type FilterType = 'all' | 'backed' | 'issues';
+type FilterType = 'all' | 'preUpdate' | 'postUpdate' | 'pending' | 'issues';
 type ViewType = 'cards' | 'table';
 
 const Index = () => {
@@ -20,14 +20,26 @@ const Index = () => {
 
   const stats = getBackupStats(mockDatabases);
 
+  // Calculate pending backups (servers where either pre or post is still pending)
+  const pendingCount = mockDatabases.filter(db => 
+    db.preUpdate.status === 'pending' || db.postUpdate.status === 'pending'
+  ).length;
+
   const filteredDatabases = useMemo(() => {
     switch (filter) {
-      case 'backed':
+      case 'preUpdate':
         return mockDatabases.filter(db => 
           db.preUpdate.status === 'success' && 
+          db.preUpdate.recordsBacked === db.preUpdate.totalRecords
+        );
+      case 'postUpdate':
+        return mockDatabases.filter(db => 
           db.postUpdate.status === 'success' && 
-          db.preUpdate.recordsBacked === db.preUpdate.totalRecords &&
           db.postUpdate.recordsBacked === db.postUpdate.totalRecords
+        );
+      case 'pending':
+        return mockDatabases.filter(db => 
+          db.preUpdate.status === 'pending' || db.postUpdate.status === 'pending'
         );
       case 'issues':
         return mockDatabases.filter(db => {
@@ -47,17 +59,6 @@ const Index = () => {
 
   const handleFilterClick = (newFilter: FilterType) => {
     setFilter(filter === newFilter ? 'all' : newFilter);
-  };
-
-  // Calculate pre/post stats for cards
-  const preUpdateStats = {
-    success: stats.preUpdate.success,
-    issues: stats.preUpdate.failed + stats.preUpdate.incomplete
-  };
-  
-  const postUpdateStats = {
-    success: stats.postUpdate.success,
-    issues: stats.postUpdate.failed + stats.postUpdate.incomplete
   };
 
   return (
@@ -85,7 +86,7 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Summary Section */}
         <section className="mb-8">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <SummaryCard
               title="Total Servers"
               value={stats.total}
@@ -93,24 +94,33 @@ const Index = () => {
               icon={<Server className="h-6 w-6" />}
               active={filter === 'all'}
               onClick={() => handleFilterClick('all')}
-              preUpdate={preUpdateStats}
-              postUpdate={postUpdateStats}
             />
             <SummaryCard
-              title="Fully Backed Up"
-              value={stats.fullyBacked}
+              title="Pre-Update Complete"
+              value={stats.preUpdate.success}
               variant="success"
-              icon={<CheckCircle2 className="h-6 w-6" />}
-              active={filter === 'backed'}
-              onClick={() => handleFilterClick('backed')}
+              icon={<ArrowDownToLine className="h-6 w-6" />}
+              active={filter === 'preUpdate'}
+              onClick={() => handleFilterClick('preUpdate')}
+              subtitle={`${stats.preUpdate.failed} failed · ${stats.preUpdate.incomplete} incomplete`}
             />
             <SummaryCard
-              title="Has Issues"
-              value={stats.hasIssues}
-              variant={stats.hasIssues > 0 ? 'danger' : 'default'}
-              icon={<XCircle className="h-6 w-6" />}
-              active={filter === 'issues'}
-              onClick={() => handleFilterClick('issues')}
+              title="Post-Update Complete"
+              value={stats.postUpdate.success}
+              variant="success"
+              icon={<ArrowUpFromLine className="h-6 w-6" />}
+              active={filter === 'postUpdate'}
+              onClick={() => handleFilterClick('postUpdate')}
+              subtitle={`${stats.postUpdate.failed} failed · ${stats.postUpdate.incomplete} incomplete`}
+            />
+            <SummaryCard
+              title="Pending Backups"
+              value={pendingCount}
+              variant={pendingCount > 0 ? 'warning' : 'default'}
+              icon={<Clock className="h-6 w-6" />}
+              active={filter === 'pending'}
+              onClick={() => handleFilterClick('pending')}
+              subtitle="Awaiting backup completion"
             />
           </div>
         </section>
