@@ -1,9 +1,22 @@
-import { Database, BackupAttempt, formatNumber } from '@/data/mockBackupData';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { EnvironmentBadge } from './EnvironmentBadge';
-import { CheckCircle2, XCircle, Clock, AlertCircle, AlertTriangle, Minus } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
+import { Database, BackupAttempt } from "@/data/apiTypes";
+import { formatNumber } from "@/data/apiService";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { EnvironmentBadge } from "./EnvironmentBadge";
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertCircle,
+  AlertTriangle,
+  Minus,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 interface DatabaseDetailModalProps {
   database: Database | null;
@@ -11,31 +24,63 @@ interface DatabaseDetailModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function PhaseDetailCard({ phase, label }: { phase: Database['preUpdate']; label: string }) {
-  const isComplete = phase.status === 'success' && phase.recordsBacked === phase.totalRecords;
-  const isIncomplete = phase.status === 'success' && phase.recordsBacked < phase.totalRecords;
-  const isFailed = phase.status === 'failed';
-  const isPending = phase.status === 'pending';
-  
-  const progressPercent = phase.totalRecords > 0 ? (phase.recordsBacked / phase.totalRecords) * 100 : 0;
+function PhaseDetailCard({
+  phase,
+  label,
+}: {
+  phase: Database["preUpdate"];
+  label: string;
+}) {
+  const isComplete =
+    phase.status === "success" && phase.recordsBacked === phase.totalRecords;
+  const isIncomplete =
+    phase.status === "success" && phase.recordsBacked < phase.totalRecords;
+  const isFailed = phase.status === "failed";
+  const isPending = phase.status === "pending";
+
+  // Show 100% for failed/pending with no data, otherwise show real progress
+  let progressPercent = 0;
+  if ((isFailed || isPending) && phase.recordsBacked === 0) {
+    progressPercent = 100;
+  } else if (phase.totalRecords > 0) {
+    progressPercent = (phase.recordsBacked / phase.totalRecords) * 100;
+  }
 
   const formatTimestamp = (timestamp: string | null) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return "N/A";
     const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
+  const getAgeDisplay = (timestamp: string | null) => {
+    if (!timestamp) return "N/A";
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) {
+      return `${diffDays}d ago`;
+    } else if (diffHours > 0) {
+      return `${diffHours}h ago`;
+    } else {
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      return `${diffMins}m ago`;
+    }
+  };
+
   const getBgClass = () => {
-    if (isComplete) return 'bg-success/10 border-success/20';
-    if (isFailed) return 'bg-destructive/10 border-destructive/20';
-    if (isPending) return 'bg-muted/50 border-border';
-    return 'bg-warning/10 border-warning/20';
+    if (isComplete) return "bg-success/10 border-success/20";
+    if (isFailed) return "bg-destructive/10 border-destructive/20";
+    if (isPending) return "bg-muted/50 border-border";
+    return "bg-warning/10 border-warning/20";
   };
 
   const getStatusIcon = () => {
@@ -46,56 +91,87 @@ function PhaseDetailCard({ phase, label }: { phase: Database['preUpdate']; label
   };
 
   const getStatusLabel = () => {
-    if (isComplete) return 'Complete';
-    if (isFailed) return 'Failed';
-    if (isPending) return 'Pending';
-    return 'Incomplete';
+    if (isComplete) return "Complete";
+    if (isFailed) return "Failed";
+    if (isPending) return "Pending";
+    return "Incomplete";
+  };
+
+  const getProgressColor = () => {
+    if (isComplete) return "bg-success";
+    if (isFailed) return "bg-destructive";
+    if (isPending) return "bg-warning";
+    return "bg-warning";
   };
 
   return (
-    <div className={cn('rounded-lg border p-4', getBgClass())}>
+    <div className={cn("rounded-lg border p-4", getBgClass())}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-semibold text-foreground">{label}</span>
         <div className="flex items-center gap-1.5">
           {getStatusIcon()}
-          <span className={cn(
-            'text-sm font-semibold',
-            isComplete ? 'text-success' : isFailed ? 'text-destructive' : isPending ? 'text-muted-foreground' : 'text-warning'
-          )}>
+          <span
+            className={cn(
+              "text-sm font-semibold",
+              isComplete
+                ? "text-success"
+                : isFailed
+                  ? "text-destructive"
+                  : isPending
+                    ? "text-muted-foreground"
+                    : "text-warning",
+            )}
+          >
             {getStatusLabel()}
           </span>
         </div>
       </div>
-      
-      <Progress 
-        value={progressPercent} 
-        className={cn(
-          'h-2 mb-2',
-          isComplete ? '[&>div]:bg-success' : isFailed ? '[&>div]:bg-destructive' : isPending ? '[&>div]:bg-muted' : '[&>div]:bg-warning'
-        )}
+
+      <Progress
+        value={progressPercent}
+        className="h-2 mb-2"
+        indicatorClassName={getProgressColor()}
       />
-      
+
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
-          {formatNumber(phase.recordsBacked)} / {formatNumber(phase.totalRecords)} records
+          {formatNumber(phase.recordsBacked)} /{" "}
+          {formatNumber(phase.totalRecords)} mb
         </span>
-        <span className={cn(
-          'font-medium',
-          isComplete ? 'text-success' : isFailed ? 'text-destructive' : isPending ? 'text-muted-foreground' : 'text-warning'
-        )}>
+        <span
+          className={cn(
+            "font-medium",
+            isComplete
+              ? "text-success"
+              : isFailed
+                ? "text-destructive"
+                : isPending
+                  ? "text-muted-foreground"
+                  : "text-warning",
+          )}
+        >
           {progressPercent.toFixed(0)}%
         </span>
       </div>
-      
-      <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-        <Clock className="h-3 w-3" />
-        <span>{formatTimestamp(phase.lastBackupTimestamp)}</span>
+
+      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          <span>{formatTimestamp(phase.lastBackupTimestamp)}</span>
+        </div>
+        <span className="font-medium">
+          {getAgeDisplay(phase.lastBackupTimestamp)}
+        </span>
       </div>
     </div>
   );
 }
 
-export function DatabaseDetailModal({ database, open, onOpenChange }: DatabaseDetailModalProps) {
+export function DatabaseDetailModal({
+  database,
+  open,
+  onOpenChange,
+}: DatabaseDetailModalProps) {
   if (!database) return null;
 
   return (
@@ -111,8 +187,14 @@ export function DatabaseDetailModal({ database, open, onOpenChange }: DatabaseDe
         <div className="mt-4 space-y-4">
           {/* Pre-Update and Post-Update Cards */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <PhaseDetailCard phase={database.preUpdate} label="Pre-Update Backup" />
-            <PhaseDetailCard phase={database.postUpdate} label="Post-Update Backup" />
+            <PhaseDetailCard
+              phase={database.preUpdate}
+              label="Pre-Update Backup"
+            />
+            <PhaseDetailCard
+              phase={database.postUpdate}
+              label="Post-Update Backup"
+            />
           </div>
 
           {/* Backup History */}
@@ -135,38 +217,40 @@ export function DatabaseDetailModal({ database, open, onOpenChange }: DatabaseDe
 function BackupAttemptRow({ attempt }: { attempt: BackupAttempt }) {
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   return (
     <div
       className={cn(
-        'rounded-lg border p-3',
-        attempt.status === 'success'
-          ? 'border-success/20 bg-success/5'
-          : 'border-destructive/20 bg-destructive/5'
+        "rounded-lg border p-3",
+        attempt.status === "success"
+          ? "border-success/20 bg-success/5"
+          : "border-destructive/20 bg-destructive/5",
       )}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {attempt.status === 'success' ? (
+          {attempt.status === "success" ? (
             <CheckCircle2 className="h-4 w-4 text-success" />
           ) : (
             <XCircle className="h-4 w-4 text-destructive" />
           )}
           <span
             className={cn(
-              'font-medium',
-              attempt.status === 'success' ? 'text-success' : 'text-destructive'
+              "font-medium",
+              attempt.status === "success"
+                ? "text-success"
+                : "text-destructive",
             )}
           >
-            {attempt.status === 'success' ? 'Success' : 'Failed'}
+            {attempt.status === "success" ? "Success" : "Failed"}
           </span>
         </div>
         <span className="flex items-center gap-1 text-sm text-muted-foreground">

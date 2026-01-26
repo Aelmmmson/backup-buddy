@@ -1,7 +1,17 @@
-import { Database, formatNumber, getServerOverallStatus } from '@/data/mockBackupData';
-import { EnvironmentBadge } from './EnvironmentBadge';
-import { CheckCircle2, XCircle, AlertTriangle, Minus, Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  Database,
+  formatNumber,
+  getServerOverallStatus,
+} from "@/data/apiService";
+import { EnvironmentBadge } from "./EnvironmentBadge";
+import {
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Minus,
+  Clock,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -9,27 +19,37 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 
 interface ServerTableProps {
   databases: Database[];
   onRowClick: (database: Database) => void;
 }
 
-function StatusBadge({ status, complete }: { status: 'success' | 'failed' | 'pending'; complete: boolean }) {
-  if (status === 'pending') {
+function StatusBadge({
+  status,
+  complete,
+}: {
+  status: "success" | "failed" | "pending";
+  complete: boolean;
+}) {
+  if (status === "pending") {
     return (
       <span className="inline-flex items-center gap-1 text-xs italic text-muted-foreground">
         <Minus className="h-3 w-3" />
-        <span className="border-b border-dashed border-muted-foreground/50">Pending</span>
+        <span className="border-b border-dashed border-muted-foreground/50">
+          Pending
+        </span>
       </span>
     );
   }
-  if (status === 'failed') {
+  if (status === "failed") {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">
         <XCircle className="h-3 w-3" />
-        <span className="border-b border-dashed border-destructive/50">Failed</span>
+        <span className="border-b border-dashed border-destructive/50">
+          Failed
+        </span>
       </span>
     );
   }
@@ -37,7 +57,9 @@ function StatusBadge({ status, complete }: { status: 'success' | 'failed' | 'pen
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium text-warning">
         <AlertTriangle className="h-3 w-3" />
-        <span className="border-b border-dashed border-warning/50">Incomplete</span>
+        <span className="border-b border-dashed border-warning/50">
+          Incomplete
+        </span>
       </span>
     );
   }
@@ -49,20 +71,26 @@ function StatusBadge({ status, complete }: { status: 'success' | 'failed' | 'pen
   );
 }
 
-function ProgressCell({ phase }: { phase: Database['preUpdate'] }) {
+function ProgressCell({ phase }: { phase: Database["preUpdate"] }) {
   const complete = phase.recordsBacked === phase.totalRecords;
   return (
     <div className="space-y-1">
       <StatusBadge status={phase.status} complete={complete} />
       <div className="text-xs text-muted-foreground">
-        <span className={cn(
-          'font-medium',
-          complete ? 'text-success' : phase.status === 'failed' ? 'text-destructive' : 'text-warning'
-        )}>
+        <span
+          className={cn(
+            "font-medium",
+            complete
+              ? "text-success"
+              : phase.status === "failed"
+                ? "text-destructive"
+                : "text-warning",
+          )}
+        >
           {formatNumber(phase.recordsBacked)}
         </span>
         <span className="mx-1">/</span>
-        <span>{formatNumber(phase.totalRecords)}</span>
+        <span>{formatNumber(phase.totalRecords)} mb</span>
       </div>
     </div>
   );
@@ -70,41 +98,43 @@ function ProgressCell({ phase }: { phase: Database['preUpdate'] }) {
 
 export function ServerTable({ databases, onRowClick }: ServerTableProps) {
   const formatTimestamp = (timestamp: string | null) => {
-    if (!timestamp) return <span className="italic text-muted-foreground/60">—</span>;
+    if (!timestamp)
+      return <span className="italic text-muted-foreground/60">—</span>;
     const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const formatAge = (hours: number | null) => {
-    if (hours === null) return <span className="italic text-muted-foreground/60">—</span>;
-    
+    if (hours === null)
+      return <span className="italic text-muted-foreground/60">—</span>;
+
     if (hours < 1) {
       const minutes = Math.round(hours * 60);
-      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+      return `${minutes} minute${minutes !== 1 ? "s" : ""}`;
     }
-    
+
     const wholeHours = Math.floor(hours);
     const remainingMinutes = Math.round((hours - wholeHours) * 60);
-    
+
     if (wholeHours < 24) {
       if (remainingMinutes === 0) {
-        return `${wholeHours} hour${wholeHours !== 1 ? 's' : ''}`;
+        return `${wholeHours} hour${wholeHours !== 1 ? "s" : ""}`;
       }
-      return `${wholeHours} hour${wholeHours !== 1 ? 's' : ''} ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}`;
+      return `${wholeHours} hour${wholeHours !== 1 ? "s" : ""} ${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`;
     }
-    
+
     const days = Math.floor(wholeHours / 24);
     const remainingHours = wholeHours % 24;
-    
+
     if (remainingHours === 0) {
-      return `${days} day${days !== 1 ? 's' : ''}`;
+      return `${days} day${days !== 1 ? "s" : ""}`;
     }
-    return `${days} day${days !== 1 ? 's' : ''} ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}`;
+    return `${days} day${days !== 1 ? "s" : ""} ${remainingHours} hour${remainingHours !== 1 ? "s" : ""}`;
   };
 
   return (
@@ -128,19 +158,27 @@ export function ServerTable({ databases, onRowClick }: ServerTableProps) {
                 key={database.id}
                 onClick={() => onRowClick(database)}
                 className={cn(
-                  'cursor-pointer transition-all duration-200 hover:bg-muted/70',
-                  index % 2 === 0 ? 'bg-background' : 'bg-muted/20',
-                  overallStatus === 'failed' && 'hover:bg-destructive/5',
-                  overallStatus === 'warning' && 'hover:bg-warning/5'
+                  "cursor-pointer transition-all duration-200 hover:bg-muted/70",
+                  index % 2 === 0 ? "bg-background" : "bg-muted/20",
+                  overallStatus === "failed" && "hover:bg-destructive/5",
+                  overallStatus === "warning" && "hover:bg-warning/5",
                 )}
                 style={{ animationDelay: `${index * 30}ms` }}
               >
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    {overallStatus === 'success' && <CheckCircle2 className="h-4 w-4 text-success" />}
-                    {overallStatus === 'warning' && <AlertTriangle className="h-4 w-4 text-warning" />}
-                    {overallStatus === 'failed' && <XCircle className="h-4 w-4 text-destructive animate-pulse-slow" />}
-                    <span className="truncate max-w-[200px]">{database.name}</span>
+                    {overallStatus === "success" && (
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                    )}
+                    {overallStatus === "warning" && (
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                    )}
+                    {overallStatus === "failed" && (
+                      <XCircle className="h-4 w-4 text-destructive animate-pulse-slow" />
+                    )}
+                    <span className="truncate max-w-[200px]">
+                      {database.name}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -155,7 +193,10 @@ export function ServerTable({ databases, onRowClick }: ServerTableProps) {
                 <TableCell>
                   <span className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
-                    {formatTimestamp(database.postUpdate.lastBackupTimestamp || database.preUpdate.lastBackupTimestamp)}
+                    {formatTimestamp(
+                      database.postUpdate.lastBackupTimestamp ||
+                        database.preUpdate.lastBackupTimestamp,
+                    )}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
@@ -168,7 +209,10 @@ export function ServerTable({ databases, onRowClick }: ServerTableProps) {
           })}
           {databases.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+              <TableCell
+                colSpan={6}
+                className="text-center py-8 text-muted-foreground"
+              >
                 No servers match this filter
               </TableCell>
             </TableRow>

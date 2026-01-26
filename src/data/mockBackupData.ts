@@ -53,7 +53,7 @@ export const mockDatabases: Database[] = [
   },
   {
     id: '2',
-    name: 'Customer Accounts DB',
+    name: 'PostgreSQL',
     environment: 'Production',
     preUpdate: {
       status: 'success',
@@ -76,7 +76,7 @@ export const mockDatabases: Database[] = [
   },
   {
     id: '3',
-    name: 'Transaction Ledger',
+    name: 'Document',
     environment: 'Production',
     preUpdate: {
       status: 'failed',
@@ -99,7 +99,7 @@ export const mockDatabases: Database[] = [
   },
   {
     id: '4',
-    name: 'Loan Management System',
+    name: 'Imaging',
     environment: 'Production',
     preUpdate: {
       status: 'success',
@@ -121,7 +121,7 @@ export const mockDatabases: Database[] = [
     ],
   },
   {
-    id: '5',
+    id: '6',
     name: 'Core Banking System',
     environment: 'DR',
     preUpdate: {
@@ -144,8 +144,8 @@ export const mockDatabases: Database[] = [
     ],
   },
   {
-    id: '6',
-    name: 'Customer Accounts DB',
+    id: '5',
+    name: 'HR',
     environment: 'DR',
     preUpdate: {
       status: 'failed',
