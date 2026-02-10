@@ -113,28 +113,18 @@ export function ServerTable({ databases, onRowClick }: ServerTableProps) {
     if (hours === null)
       return <span className="italic text-muted-foreground/60">—</span>;
 
-    if (hours < 1) {
-      const minutes = Math.round(hours * 60);
-      return `${minutes} minute${minutes !== 1 ? "s" : ""}`;
-    }
+    let totalMinutes = Math.round(hours * 60);
+    const d = Math.floor(totalMinutes / (24 * 60));
+    totalMinutes %= (24 * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
 
-    const wholeHours = Math.floor(hours);
-    const remainingMinutes = Math.round((hours - wholeHours) * 60);
+    const parts = [];
+    if (d > 0) parts.push(`${d} ${d === 1 ? "day" : "days"}`);
+    if (h > 0) parts.push(`${h} ${h === 1 ? "hour" : "hours"}`);
+    if (m > 0 || parts.length === 0) parts.push(`${m} ${m === 1 ? "minute" : "minutes"}`);
 
-    if (wholeHours < 24) {
-      if (remainingMinutes === 0) {
-        return `${wholeHours} hour${wholeHours !== 1 ? "s" : ""}`;
-      }
-      return `${wholeHours} hour${wholeHours !== 1 ? "s" : ""} ${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`;
-    }
-
-    const days = Math.floor(wholeHours / 24);
-    const remainingHours = wholeHours % 24;
-
-    if (remainingHours === 0) {
-      return `${days} day${days !== 1 ? "s" : ""}`;
-    }
-    return `${days} day${days !== 1 ? "s" : ""} ${remainingHours} hour${remainingHours !== 1 ? "s" : ""}`;
+    return parts.join(", ");
   };
 
   return (
@@ -195,7 +185,7 @@ export function ServerTable({ databases, onRowClick }: ServerTableProps) {
                     <Clock className="h-3.5 w-3.5" />
                     {formatTimestamp(
                       database.postUpdate.lastBackupTimestamp ||
-                        database.preUpdate.lastBackupTimestamp,
+                      database.preUpdate.lastBackupTimestamp,
                     )}
                   </span>
                 </TableCell>

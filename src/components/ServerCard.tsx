@@ -110,10 +110,19 @@ export function ServerCard({ database, onClick, index }: ServerCardProps) {
 
   const formatAge = (hours: number | null) => {
     if (hours === null) return "N/A";
-    if (hours < 1) return "< 1 hour";
-    if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"}`;
-    const days = Math.floor(hours / 24);
-    return `${days} ${days === 1 ? "day" : "days"}`;
+
+    let totalMinutes = Math.round(hours * 60);
+    const d = Math.floor(totalMinutes / (24 * 60));
+    totalMinutes %= (24 * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+
+    const parts = [];
+    if (d > 0) parts.push(`${d} ${d === 1 ? "day" : "days"}`);
+    if (h > 0) parts.push(`${h} ${h === 1 ? "hour" : "hours"}`);
+    if (m > 0 || parts.length === 0) parts.push(`${m} ${m === 1 ? "minute" : "minutes"}`);
+
+    return parts.join(", ");
   };
 
   const overallStatus = getServerOverallStatus(database);
@@ -201,7 +210,7 @@ export function ServerCard({ database, onClick, index }: ServerCardProps) {
               Last:{" "}
               {formatTimestamp(
                 database.postUpdate.lastBackupTimestamp ||
-                  database.preUpdate.lastBackupTimestamp,
+                database.preUpdate.lastBackupTimestamp,
               )}
             </span>
             <span className="text-muted-foreground/70">

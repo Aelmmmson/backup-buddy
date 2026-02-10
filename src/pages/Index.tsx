@@ -12,6 +12,8 @@ import { ServerCard } from "@/components/ServerCard";
 import { ServerTable } from "@/components/ServerTable";
 import { DatabaseDetailModal } from "@/components/DatabaseDetailModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useNavigate } from "react-router-dom";
+import { logout } from "@/lib/auth"; // import logout
 import {
   Server,
   ArrowDownToLine,
@@ -20,7 +22,11 @@ import {
   Shield,
   LayoutGrid,
   Table,
+  Settings,
+  LogOut,
 } from "lucide-react";
+import { Button } from "@/components/ui/button"; // import Button
+
 import { cn } from "@/lib/utils";
 
 type FilterType = "all" | "preUpdate" | "postUpdate" | "pending" | "issues";
@@ -42,7 +48,7 @@ const Index = () => {
   } = useQuery({
     queryKey: ["dashboardData"],
     queryFn: fetchDashboardData,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 3600000, // Refetch every 1 hour
   });
 
   // Map API response to databases (memoized)
@@ -108,6 +114,8 @@ const Index = () => {
     setFilter(filter === newFilter ? "all" : newFilter);
   };
 
+  const navigate = useNavigate(); // Hook for navigation
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -128,12 +136,35 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <ThemeToggle />
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/users")}
+                className="hidden sm:flex"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-14 py-8">
+      <main className="container mx-auto px-32 py-8">
         {/* Error State */}
         {error && (
           <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
