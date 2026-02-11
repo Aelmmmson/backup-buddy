@@ -15,15 +15,17 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from "react-router-dom";
 import { logout } from "@/lib/auth"; // import logout
 import {
+  AlertCircle,
+  AlertTriangle,
+  ShieldPlus,
+  ShieldCheck,
+  Timer,
+  Activity,
   Server,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  Clock,
-  Shield,
-  LayoutGrid,
-  Table,
   Settings,
   LogOut,
+  LayoutGrid,
+  Table,
 } from "lucide-react";
 import { Button } from "@/components/ui/button"; // import Button
 
@@ -165,15 +167,7 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto px-32 py-8">
-        {/* Error State */}
-        {error && (
-          <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
-            <p className="font-semibold">Error loading dashboard</p>
-            <p className="text-sm">
-              {error instanceof Error ? error.message : "Failed to fetch data"}
-            </p>
-          </div>
-        )}
+
 
         {/* Loading State */}
         {isLoading ? (
@@ -197,7 +191,7 @@ const Index = () => {
                   title="Total Servers"
                   value={stats.total}
                   variant="default"
-                  icon={<Server className="h-6 w-6" />}
+                  icon={<Activity className="h-6 w-6" />}
                   active={filter === "all"}
                   onClick={() => handleFilterClick("all")}
                 />
@@ -205,7 +199,7 @@ const Index = () => {
                   title="Pre-Update Complete"
                   value={stats.preUpdate.success}
                   variant="success"
-                  icon={<ArrowDownToLine className="h-6 w-6" />}
+                  icon={<ShieldPlus className="h-6 w-6" />}
                   active={filter === "preUpdate"}
                   onClick={() => handleFilterClick("preUpdate")}
                   subtitle={`${stats.preUpdate.failed} failed · ${stats.preUpdate.incomplete} incomplete`}
@@ -214,7 +208,7 @@ const Index = () => {
                   title="Post-Update Complete"
                   value={stats.postUpdate.success}
                   variant="success"
-                  icon={<ArrowUpFromLine className="h-6 w-6" />}
+                  icon={<ShieldCheck className="h-6 w-6" />}
                   active={filter === "postUpdate"}
                   onClick={() => handleFilterClick("postUpdate")}
                   subtitle={`${stats.postUpdate.failed} failed · ${stats.postUpdate.incomplete} incomplete`}
@@ -223,7 +217,7 @@ const Index = () => {
                   title="Pending Backups"
                   value={pendingCount}
                   variant={pendingCount > 0 ? "warning" : "default"}
-                  icon={<Clock className="h-6 w-6" />}
+                  icon={<Timer className="h-6 w-6" />}
                   active={filter === "pending"}
                   onClick={() => handleFilterClick("pending")}
                   subtitle="Awaiting backup completion"
@@ -231,17 +225,12 @@ const Index = () => {
               </div>
             </section>
 
-            {/* Warning Banner */}
-            <WarningBanner
-              count={stats.hasIssues}
-              active={filter === "issues"}
-              onClick={() => handleFilterClick("issues")}
-            />
+
 
             {/* Server List */}
             <section>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold text-foreground shrink-0">
                   All Servers
                   {filter !== "all" && (
                     <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -249,7 +238,21 @@ const Index = () => {
                     </span>
                   )}
                 </h2>
-                <div className="flex items-center gap-3">
+
+                {error ? (
+                  <div className="flex items-center justify-center gap-2 rounded-full bg-destructive/10 px-4 h-10 text-center text-sm font-medium text-destructive animate-in fade-in slide-in-from-top-1 duration-300">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Error loading dashboard: {error instanceof Error ? error.message : "Failed to fetch data"}</span>
+                  </div>
+                ) : (
+                  <WarningBanner
+                    count={stats.hasIssues}
+                    active={filter === "issues"}
+                    onClick={() => handleFilterClick("issues")}
+                  />
+                )}
+
+                <div className="flex items-center gap-3 shrink-0">
                   {filter !== "all" && (
                     <button
                       onClick={() => setFilter("all")}

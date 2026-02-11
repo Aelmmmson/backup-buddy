@@ -14,15 +14,19 @@ export function WarningBanner({ count, active, onClick }: WarningBannerProps) {
     <button
       onClick={onClick}
       className={cn(
-        "animate-fade-in mb-6 flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 w-full text-left transition-all duration-200 hover:bg-destructive/15 hover:border-destructive/50",
-        active && "ring-2 ring-destructive bg-destructive/20"
+        "flex items-center justify-center gap-2 rounded-full px-4 h-10 text-center text-sm font-medium animate-in fade-in slide-in-from-top-1 duration-300 transition-all shadow-sm",
+        active
+          ? "bg-destructive text-white shadow-destructive/20 active:scale-95"
+          : "bg-destructive/10 text-destructive hover:bg-destructive/20"
       )}
     >
-      <AlertTriangle className="h-5 w-5 animate-pulse-slow text-destructive" />
-      <p className="font-medium text-destructive">
+      <AlertTriangle className={cn("h-4 w-4", active ? "animate-none" : "animate-pulse-slow")} />
+      <span className="whitespace-nowrap">
         {count} {count === 1 ? 'database has' : 'databases have'} not been backed up today
-      </p>
-      <span className="ml-auto text-xs text-destructive/70 italic">Click to filter</span>
+      </span>
+      <span className="ml-2 text-[10px] opacity-70 italic whitespace-nowrap border-l border-current pl-2 hidden sm:inline">
+        Click to filter
+      </span>
     </button>
   );
 }
