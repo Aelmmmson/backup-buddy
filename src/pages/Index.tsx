@@ -273,7 +273,7 @@ const Index = () => {
                       )}
                     >
                       <LayoutGrid className="h-4 w-4" />
-                      Cards
+                      <span className="hidden lg:inline">Cards</span>
                     </button>
                     <button
                       onClick={() => setViewType("table")}
@@ -285,7 +285,7 @@ const Index = () => {
                       )}
                     >
                       <Table className="h-4 w-4" />
-                      Table
+                      <span className="hidden lg:inline">Table</span>
                     </button>
                   </div>
                 </div>

@@ -135,8 +135,14 @@ function PhaseDetailCard({
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
-          {formatNumber(phase.recordsBacked)} /{" "}
-          {formatNumber(phase.totalRecords)} mb
+          {phase.recordsBacked === 0 || phase.recordsBacked === null ? (
+            "No data"
+          ) : (
+            <>
+              {formatNumber(phase.recordsBacked)} /{" "}
+              {formatNumber(phase.totalRecords)} kb
+            </>
+          )}
         </span>
         <span
           className={cn(

@@ -78,7 +78,7 @@ export function DataTable<T>({
                                     key={`${keyExtractor(item)}-${col.key}`}
                                     className={cn(col.className, col.hideOnMobile && "hidden md:table-cell")}
                                 >
-                                    {col.render ? col.render(item) : (item as any)[col.key]}
+                                    {col.render ? col.render(item) : (item as unknown)[col.key]}
                                 </TableCell>
                             ))}
                         </TableRow>

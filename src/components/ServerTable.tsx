@@ -77,20 +77,26 @@ function ProgressCell({ phase }: { phase: Database["preUpdate"] }) {
     <div className="space-y-1">
       <StatusBadge status={phase.status} complete={complete} />
       <div className="text-xs text-muted-foreground">
-        <span
-          className={cn(
-            "font-medium",
-            complete
-              ? "text-success"
-              : phase.status === "failed"
-                ? "text-destructive"
-                : "text-warning",
-          )}
-        >
-          {formatNumber(phase.recordsBacked)}
-        </span>
-        <span className="mx-1">/</span>
-        <span>{formatNumber(phase.totalRecords)} mb</span>
+        {phase.recordsBacked === 0 || phase.recordsBacked === null ? (
+          "No data"
+        ) : (
+          <>
+            <span
+              className={cn(
+                "font-medium",
+                complete
+                  ? "text-success"
+                  : phase.status === "failed"
+                    ? "text-destructive"
+                    : "text-warning",
+              )}
+            >
+              {formatNumber(phase.recordsBacked)}
+            </span>
+            <span className="mx-1">/</span>
+            <span>{formatNumber(phase.totalRecords)} kb</span>
+          </>
+        )}
       </div>
     </div>
   );

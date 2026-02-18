@@ -90,7 +90,13 @@ function PhaseStatus({
         indicatorClassName={getProgressColor()}
       />
       <p className="text-xs text-muted-foreground mt-1">
-        {formatNumber(phase.recordsBacked)} / {formatNumber(phase.totalRecords)} mb
+        {phase.recordsBacked === 0 || phase.recordsBacked === null ? (
+          "No data"
+        ) : (
+          <>
+            {formatNumber(phase.recordsBacked)} / {formatNumber(phase.totalRecords)} kb
+          </>
+        )}
       </p>
     </div>
   );
