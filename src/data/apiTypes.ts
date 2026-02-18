@@ -12,14 +12,18 @@ export interface BackupItem {
   database_name: string;
   ui_status: string;
   last_activity: string;
-  pre_status: string;
-  pre_dump_exists: boolean;
-  pre_dump_size_mb: number;
-  pre_errors: string[];
-  post_status: string | null;
-  post_dump_exists: boolean | null;
-  post_dump_size_mb: number | null;
-  post_errors: string[] | null;
+  // Pre-update fields are OPTIONAL — single-backup servers may not include them at all.
+  // If the key is present but value is null → backup required but not done yet.
+  // If the key is missing entirely → phase not applicable for this server.
+  pre_status?: string | null;
+  pre_dump_exists?: boolean | null;
+  pre_dump_size_mb?: number | null;
+  pre_errors?: string[] | null;
+  // Post-update fields are also optional for same reason
+  post_status?: string | null;
+  post_dump_exists?: boolean | null;
+  post_dump_size_mb?: number | null;
+  post_errors?: string[] | null;
 }
 
 export interface FailedBackup {
@@ -53,9 +57,10 @@ export interface BackupAttempt {
 
 export interface BackupPhase {
   status: 'success' | 'failed' | 'pending';
-  recordsBacked: number;
-  totalRecords: number;
+  dumpSizeKb: number | null;
+  dumpExists: boolean;
   lastBackupTimestamp: string | null;
+  errors: string[] | null;
 }
 
 export interface Database {
@@ -63,8 +68,8 @@ export interface Database {
   name: string;
   host: string;
   environment: 'Production' | 'DR' | 'UAT';
-  preUpdate: BackupPhase;
-  postUpdate: BackupPhase;
+  preUpdate: BackupPhase | null;   // null = phase not applicable for this server
+  postUpdate: BackupPhase | null;  // null = phase not applicable for this server
   backupAgeHours: number | null;
   backupHistory: BackupAttempt[];
   uiStatus: string;

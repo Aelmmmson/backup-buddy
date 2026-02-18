@@ -23,27 +23,83 @@ function calculateAgeInHours(timestamp: string | null): number | null {
   return diffMs / (1000 * 60 * 60);
 }
 
+/**
+ * Map a phase's API status string to internal status.
+ * null  → 'pending' (backup required but not done yet)
+ * 'SUCCESS' → 'success'
+ * 'FAILED'  → 'failed'
+ * anything else → 'pending'
+ */
+function mapPhaseStatus(apiStatus: string | null | undefined): 'success' | 'failed' | 'pending' {
+  if (apiStatus === 'SUCCESS') return 'success';
+  if (apiStatus === 'FAILED') return 'failed';
+  return 'pending';
+}
+
+/**
+ * Normalize errors field — API sometimes returns a string "[]" instead of an actual array.
+ */
+function normalizeErrors(errors: string[] | string | null | undefined): string[] | null {
+  if (!errors) return null;
+  if (typeof errors === 'string') {
+    try {
+      const parsed = JSON.parse(errors);
+      return Array.isArray(parsed) ? parsed : null;
+    } catch {
+      return [errors];
+    }
+  }
+  return errors.length > 0 ? errors : null;
+}
+
 export function mapApiResponseToDatabases(apiResponse: DashboardResponse): Database[] {
   return apiResponse.latest_backup_list.map((item, index) => {
-    const preStatus = item.pre_status === 'SUCCESS' ? 'success' : 'failed';
-    const postStatus = item.post_status === 'SUCCESS' ? 'success' : item.post_status === 'FAILED' ? 'failed' : 'pending';
-
-    // Infer environment from host name
     const environment = getEnvironmentFromHost(item.host);
 
-    const prePhase: BackupPhase = {
-      status: preStatus as 'success' | 'failed',
-      recordsBacked: item.pre_dump_exists ? item.pre_dump_size_mb : 0,
-      totalRecords: item.pre_dump_size_mb || 1,
-      lastBackupTimestamp: item.last_activity,
-    };
+    // Determine if each phase exists:
+    // - Key present in data (even if null) → phase is applicable → create BackupPhase
+    // - Key missing entirely → phase not applicable → set to null
+    const hasPrePhase = 'pre_status' in item;
+    const hasPostPhase = 'post_status' in item;
 
-    const postPhase: BackupPhase = {
-      status: postStatus as 'success' | 'failed' | 'pending',
-      recordsBacked: item.post_dump_exists ? item.post_dump_size_mb : 0,
-      totalRecords: item.pre_dump_size_mb || 1,
-      lastBackupTimestamp: item.last_activity,
-    };
+    let prePhase: BackupPhase | null = null;
+    if (hasPrePhase) {
+      prePhase = {
+        status: mapPhaseStatus(item.pre_status),
+        dumpExists: item.pre_dump_exists === true,
+        dumpSizeKb: item.pre_dump_size_mb ?? null,
+        lastBackupTimestamp: item.last_activity,
+        errors: normalizeErrors(item.pre_errors),
+      };
+    }
+
+    let postPhase: BackupPhase | null = null;
+    if (hasPostPhase) {
+      postPhase = {
+        status: mapPhaseStatus(item.post_status),
+        dumpExists: item.post_dump_exists === true,
+        dumpSizeKb: item.post_dump_size_mb ?? null,
+        lastBackupTimestamp: item.last_activity,
+        errors: normalizeErrors(item.post_errors),
+      };
+    }
+
+    // Build backup history from available data
+    const history = [];
+    if (hasPostPhase && item.post_status) {
+      history.push({
+        timestamp: item.last_activity,
+        status: (item.post_status === 'SUCCESS' ? 'success' : 'failed') as 'success' | 'failed',
+        errorMessage: normalizeErrors(item.post_errors)?.[0],
+      });
+    }
+    if (hasPrePhase && item.pre_status) {
+      history.push({
+        timestamp: item.last_activity,
+        status: (item.pre_status === 'SUCCESS' ? 'success' : 'failed') as 'success' | 'failed',
+        errorMessage: normalizeErrors(item.pre_errors)?.[0],
+      });
+    }
 
     return {
       id: `${item.host}-${item.database_name}`,
@@ -53,13 +109,7 @@ export function mapApiResponseToDatabases(apiResponse: DashboardResponse): Datab
       preUpdate: prePhase,
       postUpdate: postPhase,
       backupAgeHours: calculateAgeInHours(item.last_activity),
-      backupHistory: [
-        {
-          timestamp: item.last_activity,
-          status: postStatus as 'success' | 'failed',
-          errorMessage: item.post_errors?.[0],
-        },
-      ],
+      backupHistory: history,
       uiStatus: item.ui_status,
     };
   });
@@ -68,25 +118,26 @@ export function mapApiResponseToDatabases(apiResponse: DashboardResponse): Datab
 export function getBackupStats(databases: Database[]) {
   const total = databases.length;
 
-  // Pre-Update stats
-  const preUpdateSuccess = databases.filter(db => db.preUpdate.status === 'success' && db.preUpdate.recordsBacked === db.preUpdate.totalRecords).length;
-  const preUpdateIncomplete = databases.filter(db => db.preUpdate.status === 'success' && db.preUpdate.recordsBacked < db.preUpdate.totalRecords).length;
-  const preUpdateFailed = databases.filter(db => db.preUpdate.status === 'failed').length;
+  // Pre-Update stats — only count databases that have a pre phase
+  const dbsWithPre = databases.filter(db => db.preUpdate !== null);
+  const preUpdateSuccess = dbsWithPre.filter(db => db.preUpdate!.status === 'success').length;
+  const preUpdateIncomplete = dbsWithPre.filter(db => db.preUpdate!.status === 'pending').length;
+  const preUpdateFailed = dbsWithPre.filter(db => db.preUpdate!.status === 'failed').length;
 
-  // Post-Update stats
-  const postUpdateSuccess = databases.filter(db => db.postUpdate.status === 'success' && db.postUpdate.recordsBacked === db.postUpdate.totalRecords).length;
-  const postUpdateIncomplete = databases.filter(db => db.postUpdate.status === 'success' && db.postUpdate.recordsBacked < db.postUpdate.totalRecords).length;
-  const postUpdateFailed = databases.filter(db => db.postUpdate.status === 'failed' || db.postUpdate.status === 'pending').length;
+  // Post-Update stats — only count databases that have a post phase
+  const dbsWithPost = databases.filter(db => db.postUpdate !== null);
+  const postUpdateSuccess = dbsWithPost.filter(db => db.postUpdate!.status === 'success').length;
+  const postUpdateIncomplete = dbsWithPost.filter(db => db.postUpdate!.status === 'pending').length;
+  const postUpdateFailed = dbsWithPost.filter(db => db.postUpdate!.status === 'failed').length;
 
-  // Overall stats
-  const fullyBacked = databases.filter(db =>
-    db.preUpdate.status === 'success' &&
-    db.postUpdate.status === 'success' &&
-    db.preUpdate.recordsBacked === db.preUpdate.totalRecords &&
-    db.postUpdate.recordsBacked === db.postUpdate.totalRecords
-  ).length;
+  // Overall stats — use getServerOverallStatus for accuracy
+  // Count only servers that have actual issues (failed or warning), excluding pending/success
+  const hasIssues = databases.filter(db => {
+    const status = getServerOverallStatus(db);
+    return status === 'failed' || status === 'warning';
+  }).length;
 
-  const hasIssues = total - fullyBacked;
+  const fullyBacked = databases.filter(db => getServerOverallStatus(db) === 'success').length;
 
   return {
     total,
@@ -107,11 +158,16 @@ export function formatNumber(num: number): string {
   return num.toString();
 }
 
-export function getServerOverallStatus(db: Database): 'success' | 'warning' | 'failed' {
-  const preComplete = db.preUpdate.status === 'success' && db.preUpdate.recordsBacked === db.preUpdate.totalRecords;
-  const postComplete = db.postUpdate.status === 'success' && db.postUpdate.recordsBacked === db.postUpdate.totalRecords;
-
-  if (preComplete && postComplete) return 'success';
-  if (db.preUpdate.status === 'failed' || db.postUpdate.status === 'failed') return 'failed';
+/**
+ * Derive overall server status from the API's ui_status field.
+ * This is more reliable than computing it from phase data, since the
+ * backend knows which phases are required for each server.
+ */
+export function getServerOverallStatus(db: Database): 'success' | 'warning' | 'failed' | 'pending' {
+  const uiStatus = (db.uiStatus || '').toLowerCase();
+  if (uiStatus === 'fully backed up') return 'success';
+  if (uiStatus.includes('fail')) return 'failed';
+  if (uiStatus === 'pending') return 'pending';
+  // 'Backup Incomplete' or anything else
   return 'warning';
 }

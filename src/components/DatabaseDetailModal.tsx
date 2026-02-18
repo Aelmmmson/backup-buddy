@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { BackupPhase } from "@/data/apiTypes";
 
 interface DatabaseDetailModalProps {
   database: Database | null;
@@ -28,22 +29,17 @@ function PhaseDetailCard({
   phase,
   label,
 }: {
-  phase: Database["preUpdate"];
+  phase: BackupPhase;
   label: string;
 }) {
-  const isComplete =
-    phase.status === "success" && phase.recordsBacked === phase.totalRecords;
-  const isIncomplete =
-    phase.status === "success" && phase.recordsBacked < phase.totalRecords;
+  const isComplete = phase.status === "success" && phase.dumpExists;
   const isFailed = phase.status === "failed";
   const isPending = phase.status === "pending";
 
-  // Show 100% for failed/pending with no data, otherwise show real progress
+  // Progress: 100% for complete or failed, 0% for pending
   let progressPercent = 0;
-  if ((isFailed || isPending) && phase.recordsBacked === 0) {
+  if (isComplete || isFailed) {
     progressPercent = 100;
-  } else if (phase.totalRecords > 0) {
-    progressPercent = (phase.recordsBacked / phase.totalRecords) * 100;
   }
 
   const formatTimestamp = (timestamp: string | null) => {
@@ -100,8 +96,17 @@ function PhaseDetailCard({
   const getProgressColor = () => {
     if (isComplete) return "bg-success";
     if (isFailed) return "bg-destructive";
-    if (isPending) return "bg-warning";
+    if (isPending) return "bg-muted-foreground/30";
     return "bg-warning";
+  };
+
+  const getSizeDisplay = () => {
+    if (isPending) return <span className="animate-pulse italic">Awaiting backup</span>;
+    if (isFailed) return phase.errors?.length ? phase.errors[0] : "Backup failed";
+    if (phase.dumpSizeKb !== null && phase.dumpSizeKb > 0) {
+      return `${formatNumber(phase.dumpSizeKb)} kb`;
+    }
+    return "No data";
   };
 
   return (
@@ -135,14 +140,7 @@ function PhaseDetailCard({
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
-          {phase.recordsBacked === 0 || phase.recordsBacked === null ? (
-            "No data"
-          ) : (
-            <>
-              {formatNumber(phase.recordsBacked)} /{" "}
-              {formatNumber(phase.totalRecords)} kb
-            </>
-          )}
+          {getSizeDisplay()}
         </span>
         <span
           className={cn(
@@ -180,6 +178,10 @@ export function DatabaseDetailModal({
 }: DatabaseDetailModalProps) {
   if (!database) return null;
 
+  const hasPre = database.preUpdate !== null;
+  const hasPost = database.postUpdate !== null;
+  const phaseCount = (hasPre ? 1 : 0) + (hasPost ? 1 : 0);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="border-border bg-card sm:max-w-lg">
@@ -191,29 +193,43 @@ export function DatabaseDetailModal({
         </DialogHeader>
 
         <div className="mt-4 space-y-4">
-          {/* Pre-Update and Post-Update Cards */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <PhaseDetailCard
-              phase={database.preUpdate}
-              label="Pre-Update Backup"
-            />
-            <PhaseDetailCard
-              phase={database.postUpdate}
-              label="Post-Update Backup"
-            />
+          {/* Pre-Update and Post-Update Cards — only render applicable phases */}
+          <div className={cn(
+            "grid gap-4",
+            phaseCount === 2 ? "sm:grid-cols-2" : "grid-cols-1",
+          )}>
+            {hasPre && (
+              <PhaseDetailCard
+                phase={database.preUpdate!}
+                label="Pre-Update Backup"
+              />
+            )}
+            {hasPost && (
+              <PhaseDetailCard
+                phase={database.postUpdate!}
+                label="Post-Update Backup"
+              />
+            )}
+            {!hasPre && !hasPost && (
+              <div className="rounded-lg border border-border p-4 text-center text-sm text-muted-foreground italic">
+                No backup phases configured for this server
+              </div>
+            )}
           </div>
 
           {/* Backup History */}
-          <div className="mt-6">
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Last 3 Backup Attempts
-            </h4>
-            <div className="space-y-3">
-              {database.backupHistory.map((attempt, index) => (
-                <BackupAttemptRow key={index} attempt={attempt} />
-              ))}
+          {database.backupHistory.length > 0 && (
+            <div className="mt-6">
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Last {database.backupHistory.length} Backup Attempt{database.backupHistory.length !== 1 ? 's' : ''}
+              </h4>
+              <div className="space-y-3">
+                {database.backupHistory.map((attempt, index) => (
+                  <BackupAttemptRow key={index} attempt={attempt} />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

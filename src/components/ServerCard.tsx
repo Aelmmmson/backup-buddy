@@ -3,6 +3,7 @@ import {
   formatNumber,
   getServerOverallStatus,
 } from "@/data/apiService";
+import { BackupPhase } from "@/data/apiTypes";
 import { EnvironmentBadge } from "./EnvironmentBadge";
 import {
   CheckCircle2,
@@ -15,32 +16,32 @@ import {
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
+export type VisiblePhase = 'both' | 'pre' | 'post';
+
 interface ServerCardProps {
   database: Database;
   onClick: () => void;
   index: number;
+  visiblePhase?: VisiblePhase;
 }
 
 function PhaseStatus({
   phase,
   label,
 }: {
-  phase: Database["preUpdate"];
+  phase: BackupPhase;
   label: string;
 }) {
-  const isComplete =
-    phase.status === "success" && phase.recordsBacked === phase.totalRecords;
-  const isIncomplete =
-    phase.status === "success" && phase.recordsBacked < phase.totalRecords;
+  const isComplete = phase.status === "success" && phase.dumpExists;
   const isFailed = phase.status === "failed";
   const isPending = phase.status === "pending";
 
-  // Show 100% for failed/pending with no data, otherwise show real progress
+  // Progress: 100% for complete or failed, 0% for pending
   let progressPercent = 0;
-  if ((isFailed || isPending) && phase.recordsBacked === 0) {
+  if (isComplete) {
     progressPercent = 100;
-  } else if (phase.totalRecords > 0) {
-    progressPercent = (phase.recordsBacked / phase.totalRecords) * 100;
+  } else if (isFailed) {
+    progressPercent = 100;
   }
 
   const getStatusIcon = () => {
@@ -60,8 +61,17 @@ function PhaseStatus({
   const getProgressColor = () => {
     if (isComplete) return "bg-success";
     if (isFailed) return "bg-destructive";
-    if (isPending) return "bg-warning";
+    if (isPending) return "bg-muted-foreground/30";
     return "bg-warning";
+  };
+
+  const getSizeDisplay = () => {
+    if (isPending) return <span className="animate-pulse italic">Awaiting backup</span>;
+    if (isFailed) return phase.errors?.length ? phase.errors[0] : "Backup failed";
+    if (phase.dumpSizeKb !== null && phase.dumpSizeKb > 0) {
+      return `${formatNumber(phase.dumpSizeKb)} kb`;
+    }
+    return "No data";
   };
 
   return (
@@ -90,19 +100,13 @@ function PhaseStatus({
         indicatorClassName={getProgressColor()}
       />
       <p className="text-xs text-muted-foreground mt-1">
-        {phase.recordsBacked === 0 || phase.recordsBacked === null ? (
-          "No data"
-        ) : (
-          <>
-            {formatNumber(phase.recordsBacked)} / {formatNumber(phase.totalRecords)} kb
-          </>
-        )}
+        {getSizeDisplay()}
       </p>
     </div>
   );
 }
 
-export function ServerCard({ database, onClick, index }: ServerCardProps) {
+export function ServerCard({ database, onClick, index, visiblePhase = 'both' }: ServerCardProps) {
   const formatTimestamp = (timestamp: string | null) => {
     if (!timestamp) return "Never";
     const date = new Date(timestamp);
@@ -151,6 +155,14 @@ export function ServerCard({ database, onClick, index }: ServerCardProps) {
           bgClass: "bg-warning/10 text-warning",
           borderClass: "border-warning/20 hover:border-warning/40",
         };
+      case "pending":
+        return {
+          label: "Pending",
+          icon: Clock,
+          colorClass: "text-muted-foreground",
+          bgClass: "bg-muted text-muted-foreground",
+          borderClass: "border-border hover:border-muted-foreground/40",
+        };
       default:
         return {
           label: "Fully Backed Up",
@@ -164,6 +176,15 @@ export function ServerCard({ database, onClick, index }: ServerCardProps) {
 
   const status = getStatusInfo();
   const StatusIcon = status.icon;
+
+  // Determine which phases to render based on visiblePhase prop
+  const hasPre = database.preUpdate !== null && (visiblePhase === 'both' || visiblePhase === 'pre');
+  const hasPost = database.postUpdate !== null && (visiblePhase === 'both' || visiblePhase === 'post');
+
+  // Get the best available timestamp
+  const lastTimestamp =
+    database.postUpdate?.lastBackupTimestamp ||
+    database.preUpdate?.lastBackupTimestamp;
 
   return (
     <button
@@ -204,20 +225,24 @@ export function ServerCard({ database, onClick, index }: ServerCardProps) {
             </span>
           </div>
 
-          {/* Pre-Update and Post-Update Progress */}
+          {/* Backup Phase Progress — only render applicable phases */}
           <div className="flex gap-6">
-            <PhaseStatus phase={database.preUpdate} label="Pre-Update" />
-            <PhaseStatus phase={database.postUpdate} label="Post-Update" />
+            {hasPre && (
+              <PhaseStatus phase={database.preUpdate!} label="Pre-Update" />
+            )}
+            {hasPost && (
+              <PhaseStatus phase={database.postUpdate!} label="Post-Update" />
+            )}
+            {!hasPre && !hasPost && (
+              <p className="text-xs text-muted-foreground italic">No backup data available</p>
+            )}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
               Last:{" "}
-              {formatTimestamp(
-                database.postUpdate.lastBackupTimestamp ||
-                database.preUpdate.lastBackupTimestamp,
-              )}
+              {formatTimestamp(lastTimestamp)}
             </span>
             <span className="text-muted-foreground/70">
               Age: {formatAge(database.backupAgeHours)}
