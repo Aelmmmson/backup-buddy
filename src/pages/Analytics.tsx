@@ -154,21 +154,33 @@ function HistoryCharts({ db }: { db: Database }) {
 
   return (
     <div className="space-y-4">
-      {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Stat strip — compact inline row */}
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-3">
         {[
-          { label: "Total Runs", value: totalRuns, icon: Activity, color: "text-primary", bg: "bg-primary/10" },
-          { label: "Successful", value: successRuns, icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
-          { label: "Failed", value: failRuns, icon: XCircle, color: "text-destructive", bg: "bg-destructive/10" },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="rounded-xl border border-border bg-card p-4">
-            <div className={cn("inline-flex rounded-lg p-2 mb-2", bg)}>
-              <Icon className={cn("h-4 w-4", color)} />
-            </div>
-            <p className="text-2xl font-bold text-foreground">{value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+          { label: "Total Runs", value: totalRuns, color: "text-primary" },
+          { label: "Successful", value: successRuns, color: "text-success" },
+          { label: "Failed", value: failRuns, color: "text-destructive" },
+        ].map(({ label, value, color }, i) => (
+          <div key={label} className={cn("flex items-baseline gap-2", i > 0 && "border-l border-border pl-3")}>
+            <span className={cn("text-xl font-bold tabular-nums", color)}>{value}</span>
+            <span className="text-xs text-muted-foreground">{label}</span>
           </div>
         ))}
+        {successRuns + failRuns > 0 && (
+          <div className="ml-auto flex items-center gap-1.5">
+            <div
+              className="h-1.5 rounded-full bg-success"
+              style={{ width: `${Math.round((successRuns / totalRuns) * 80)}px`, minWidth: 4 }}
+            />
+            <div
+              className="h-1.5 rounded-full bg-destructive"
+              style={{ width: `${Math.round((failRuns / totalRuns) * 80)}px`, minWidth: failRuns ? 4 : 0 }}
+            />
+            <span className="text-xs text-muted-foreground ml-1">
+              {Math.round((successRuns / totalRuns) * 100)}% success rate
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Charts row */}
@@ -415,67 +427,65 @@ const Analytics = () => {
           </div>
         ) : (
           <>
-            {/* ── Section 1: Export ─────────────────────────────────────── */}
-            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-5 py-4">
-              <div className="flex items-center gap-2 mr-auto">
-                <Download className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">Compliance Report</span>
-                <span className="text-xs text-muted-foreground ml-1">— {databases.length} servers</span>
+            {/* ── Section 1: Export toolbar (compact single row) ────────── */}
+            <div className="flex items-center gap-2 border-b border-border pb-3">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-1">Compliance Report</span>
+              <span className="text-xs text-muted-foreground/60">{databases.length} servers</span>
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs px-2.5"
+                  onClick={() => exportComplianceCSV(databases)}
+                  disabled={databases.length === 0}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  CSV
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs px-2.5"
+                  onClick={() => exportCompliancePrint(databases)}
+                  disabled={databases.length === 0}
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  Print / PDF
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => exportComplianceCSV(databases)}
-                disabled={databases.length === 0}
-              >
-                <Download className="h-3.5 w-3.5" />
-                Download CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => exportCompliancePrint(databases)}
-                disabled={databases.length === 0}
-              >
-                <Printer className="h-3.5 w-3.5" />
-                Print / PDF
-              </Button>
             </div>
 
-            {/* ── Section 2: Server selector ────────────────────────────── */}
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-                <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  Select a Server to View History
-                </h2>
+            {/* ── Section 2: Server selector — compact pill chips ────────── */}
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
+              <div className="flex items-center gap-3 mb-2.5">
+                <span className="text-xs font-semibold text-foreground whitespace-nowrap">Select Server</span>
                 {selectedDb && (
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedDb(null)} className="gap-1.5 text-muted-foreground">
-                    <X className="h-3.5 w-3.5" />
-                    Clear selection
-                  </Button>
+                  <button
+                    onClick={() => setSelectedDb(null)}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                    Clear
+                  </button>
                 )}
-                {/* Search */}
                 <div className="relative ml-auto">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                   <input
-                    className="h-8 w-52 rounded-md border border-border bg-background pl-8 pr-7 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    placeholder="Search servers..."
+                    className="h-7 w-40 rounded-md border border-border bg-background pl-6 pr-6 text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    placeholder="Search..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                   {search && (
-                    <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      <X className="h-3 w-3" />
+                    <button onClick={() => setSearch("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-2.5 w-2.5" />
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Server grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+              {/* Horizontally scrollable pill row */}
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
                 {filtered.map((db) => {
                   const status = getServerOverallStatus(db);
                   const isActive = selectedDb?.id === db.id;
@@ -484,34 +494,26 @@ const Analytics = () => {
                       key={db.id}
                       onClick={() => setSelectedDb(isActive ? null : db)}
                       className={cn(
-                        "text-left rounded-xl border px-3 py-3 text-xs transition-all duration-200 flex flex-col gap-1",
+                        "flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150 shrink-0",
                         isActive
-                          ? "border-primary bg-primary/10 shadow-md ring-1 ring-primary/30"
-                          : "border-border bg-muted/20 hover:bg-muted/50 hover:border-muted-foreground/30"
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                          : "border-border bg-muted/30 text-foreground hover:bg-muted/70"
                       )}
                     >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-semibold text-foreground truncate">{db.name}</span>
-                        <span
-                          className={cn(
-                            "shrink-0 text-base leading-none",
-                            status === "success" ? "text-success" : status === "failed" ? "text-destructive" : "text-warning"
-                          )}
-                        >
-                          {status === "success" ? "✔" : status === "failed" ? "✖" : "⚠"}
-                        </span>
-                      </div>
-                      <span className="truncate text-muted-foreground leading-tight">{db.host}</span>
-                      <div className="mt-0.5">
-                        <EnvironmentBadge environment={db.environment} />
-                      </div>
+                      <span
+                        className={cn(
+                          "text-xs leading-none",
+                          isActive ? "text-primary-foreground" : status === "success" ? "text-success" : status === "failed" ? "text-destructive" : "text-warning"
+                        )}
+                      >
+                        {status === "success" ? "●" : status === "failed" ? "●" : "●"}
+                      </span>
+                      {db.name}
                     </button>
                   );
                 })}
                 {filtered.length === 0 && (
-                  <p className="col-span-full text-xs text-muted-foreground py-6 text-center italic">
-                    No servers match your search.
-                  </p>
+                  <span className="text-xs text-muted-foreground italic py-1">No servers match</span>
                 )}
               </div>
             </div>
