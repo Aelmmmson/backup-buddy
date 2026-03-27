@@ -30,9 +30,12 @@ function calculateAgeInHours(timestamp: string | null): number | null {
  * 'FAILED'  → 'failed'
  * anything else → 'pending'
  */
-function mapPhaseStatus(apiStatus: string | null | undefined): 'success' | 'failed' | 'pending' {
-  if (apiStatus === 'SUCCESS') return 'success';
-  if (apiStatus === 'FAILED') return 'failed';
+function mapPhaseStatus(apiStatus: string | null | undefined, uiStatus?: string): 'success' | 'failed' | 'pending' {
+  if (uiStatus?.toLowerCase() === 'fully backed up') return 'success';
+  if (!apiStatus) return 'pending';
+  const upper = apiStatus.toUpperCase();
+  if (upper === 'SUCCESS' || upper === 'SUCCESSFUL') return 'success';
+  if (upper === 'FAILED') return 'failed';
   return 'pending';
 }
 
@@ -65,7 +68,7 @@ export function mapApiResponseToDatabases(apiResponse: DashboardResponse): Datab
     let prePhase: BackupPhase | null = null;
     if (hasPrePhase) {
       prePhase = {
-        status: mapPhaseStatus(item.pre_status),
+        status: mapPhaseStatus(item.pre_status, item.ui_status),
         dumpExists: item.pre_dump_exists === true,
         dumpSizeKb: item.pre_dump_size_mb ?? null,
         lastBackupTimestamp: item.last_activity,
@@ -76,7 +79,7 @@ export function mapApiResponseToDatabases(apiResponse: DashboardResponse): Datab
     let postPhase: BackupPhase | null = null;
     if (hasPostPhase) {
       postPhase = {
-        status: mapPhaseStatus(item.post_status),
+        status: mapPhaseStatus(item.post_status, item.ui_status),
         dumpExists: item.post_dump_exists === true,
         dumpSizeKb: item.post_dump_size_mb ?? null,
         lastBackupTimestamp: item.last_activity,
@@ -89,15 +92,15 @@ export function mapApiResponseToDatabases(apiResponse: DashboardResponse): Datab
     if (hasPostPhase && item.post_status) {
       history.push({
         timestamp: item.last_activity,
-        status: (item.post_status === 'SUCCESS' ? 'success' : 'failed') as 'success' | 'failed',
-        errorMessage: normalizeErrors(item.post_errors)?.[0],
+        status: mapPhaseStatus(item.post_status, item.ui_status),
+        errorMessages: normalizeErrors(item.post_errors),
       });
     }
     if (hasPrePhase && item.pre_status) {
       history.push({
         timestamp: item.last_activity,
-        status: (item.pre_status === 'SUCCESS' ? 'success' : 'failed') as 'success' | 'failed',
-        errorMessage: normalizeErrors(item.pre_errors)?.[0],
+        status: mapPhaseStatus(item.pre_status, item.ui_status),
+        errorMessages: normalizeErrors(item.pre_errors),
       });
     }
 

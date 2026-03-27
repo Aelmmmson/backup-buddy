@@ -51,8 +51,8 @@ export interface DashboardResponse {
 // Internal Database Type (mapped from API)
 export interface BackupAttempt {
   timestamp: string;
-  status: 'success' | 'failed';
-  errorMessage?: string;
+  status: 'success' | 'failed' | 'pending';
+  errorMessages?: string[] | null;
 }
 
 export interface BackupPhase {

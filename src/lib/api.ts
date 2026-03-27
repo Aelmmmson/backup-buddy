@@ -4,7 +4,7 @@ import { getAccessToken, refreshAccessToken, logout } from "./auth";
 
 // Using the correct baseURL for the application
 const api = axios.create({
-    baseURL: "http://10.203.14.169:3066/v1/api/backup_monitor",
+    baseURL: "http://10.203.14.169:8084/v1/api/backup_monitor",
     withCredentials: true,
     headers: {
         Accept: "application/json",

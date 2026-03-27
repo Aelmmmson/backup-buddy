@@ -2,10 +2,12 @@
 
 A modern, high-performance web application designed to monitor and manage server backup statuses. Built with a focus on visual excellence, security, and real-time data tracking.
 
-## 🚀 Key Features
+## 🚀 Key Features & Current Version Highlights
 
 - **Real-time Dashboard**: Comprehensive summary of total servers, pre-update/post-update success rates, and pending backups.
-- **Advanced Filtering**: Quickly filter servers by status (Success, Failed, Pending, Incomplete) and environment (Production, Staging, Development).
+- **Intelligent Status Resolution**: Strict `ui_status` prioritization ensuring that top-level dashboard metrics accurately reflect global success, seamlessly handling any contradictory background process data.
+- **Advanced Log Viewer**: Integrated full-screen detail modals that parse, format, and display dense multi-line SQL or Oracle errors as distinct, readable warnings or errors.
+- **Advanced Filtering**: Quickly filter servers by status (Success, Failed, Pending, Incomplete) and environment (Production, DR, UAT).
 - **Dual View Modes**: Switch between a visually rich **Card View** and a data-dense **Table View** for optimal monitoring.
 - **Detailed Server Analysis**: Deep-dive into specific server backup records, progress percentages, and timestamps via interactive modals.
 - **User Management**: Complete CRUD functionality for system users and roles, featuring a modern modal-based interface and automated role capitalization.
@@ -54,7 +56,6 @@ src/
    cd backup-buddy
    ```
 
-
 2. **Install dependencies**
    ```bash
    npm install
@@ -82,14 +83,45 @@ The system implements a secure authentication flow:
 The application transforms complex backend responses into a clean, typed `Database` interface:
 - **Pre-Update**: Status and records backed up before server updates.
 - **Post-Update**: Status and records backed up after server updates.
-- **Backup Age**: A human-readable age calculation (e.g., "3 days, 1 hour, 36 minutes") for clear status reporting.
+- **Backup Age**: A human-readable age calculation for clear status reporting.
+- **Error Arrays**: Normalizes JSON-bound API errors into robust string arrays for front-end parsing.
 
 ## 🎨 Aesthetic Standards
 
-- **Typography**: Uses modern, readable fonts.
+- **Typography**: Uses modern, readable fonts (Urbanist).
 - **Animations**: Subtle entry animations for cards and lists.
 - **Glassmorphism**: Header and sticky elements use backdrop blur effects.
 - **Borders**: Strategic use of dashed borders and shadows for visual depth.
+
+---
+
+## 🚀 Future Roadmap & Recommendations
+
+To further elevate the system into an enterprise-class observability platform, the following features are highly recommended for future iterations:
+
+1. **Historical Trending & Analytics 📈**
+   - **Idea**: Integrate `Recharts` or `Chart.js` to visualize backup success and failure rates over a 30-day or 90-day window.
+   - **Value**: Helps identify chronically failing servers or systemic network issues affecting backups during specific times.
+
+2. **Automated Alerts & Webhooks 🔔**
+   - **Idea**: Integrate webhook bridging for Slack, Microsoft Teams, or standard Email alerts.
+   - **Value**: Immediately notify on-call administrators when a critical production database backup abruptly fails, reducing system downtime.
+
+3. **One-Click Retry Actions 🔄**
+   - **Idea**: Expose an API endpoint that allows administrators to manually construct and send a "Retry Backup" trigger directly from the `DatabaseDetailModal`.
+   - **Value**: Transitions the platform from a purely "monitoring" tool to an active "management" tool.
+
+4. **Exportable Compliance Reports 📑**
+   - **Idea**: Add a module that aggregates weekly dashboard data and exports it as formatted PDF or CSV compliance reports.
+   - **Value**: Satisfies external/internal auditing requirements by proving consistent database retention policies are being met.
+
+5. **Advanced Grouping & Custom Tags 🏷️**
+   - **Idea**: Allow administrators to assign custom meta-tags to databases (e.g., "Financial Data", "HR", "Legacy Systems") and filter the global dashboard by these tags.
+   - **Value**: Better organizes huge fleets of servers beyond standard "Production/UAT" classifications.
+
+6. **Granular Role-Based Access Control (RBAC) 🛡️**
+   - **Idea**: Expand the User Management module to support permissions matrices. 
+   - **Value**: Ensure junior admins can only *view* statuses, while senior DBAs can edit tags, manage users, or trigger backup retries.
 
 ---
 *Built with ❤️ for efficient server monitoring.*
