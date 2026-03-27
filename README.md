@@ -95,33 +95,46 @@ The application transforms complex backend responses into a clean, typed `Databa
 
 ---
 
-## 🚀 Future Roadmap & Recommendations
+## ✅ Implemented — This Version
 
-To further elevate the system into an enterprise-class observability platform, the following features are highly recommended for future iterations:
+| Feature | Details |
+|---|---|
+| Historical Trending & Analytics | Per-server backup size & run-result charts (Recharts). Full `/analytics` page with server selector. |
+| Exportable Compliance Reports | One-click CSV download and printer-friendly HTML/PDF report, accessible from the Analytics page. |
+| Intelligent Status Resolution | `ui_status` takes priority over raw phase statuses to prevent false failure flags. |
+| Full-Screen Log Viewer | Errors/warnings in the detail modal open in a paginated, deduplicated log view. |
+| Duplicate Error Suppression | Repeated ORA-* or system messages collapsed to single entries via `Set` deduplication. |
 
-1. **Historical Trending & Analytics 📈**
-   - **Idea**: Integrate `Recharts` or `Chart.js` to visualize backup success and failure rates over a 30-day or 90-day window.
-   - **Value**: Helps identify chronically failing servers or systemic network issues affecting backups during specific times.
+---
 
-2. **Automated Alerts & Webhooks 🔔**
-   - **Idea**: Integrate webhook bridging for Slack, Microsoft Teams, or standard Email alerts.
-   - **Value**: Immediately notify on-call administrators when a critical production database backup abruptly fails, reducing system downtime.
+## 🚀 Next Phase — Recommended Features
 
-3. **One-Click Retry Actions 🔄**
-   - **Idea**: Expose an API endpoint that allows administrators to manually construct and send a "Retry Backup" trigger directly from the `DatabaseDetailModal`.
-   - **Value**: Transitions the platform from a purely "monitoring" tool to an active "management" tool.
+The following features are recommended for the next iteration of the platform:
 
-4. **Exportable Compliance Reports 📑**
-   - **Idea**: Add a module that aggregates weekly dashboard data and exports it as formatted PDF or CSV compliance reports.
-   - **Value**: Satisfies external/internal auditing requirements by proving consistent database retention policies are being met.
+1. **Automated Alerts & Webhooks 🔔**
+   - **Idea**: Webhook bridge for Slack, Microsoft Teams, or Email. Trigger on backup failure or when a server's `ui_status` degrades.
+   - **Value**: Immediately notify on-call DBAs, removing the need to actively monitor the dashboard.
 
-5. **Advanced Grouping & Custom Tags 🏷️**
-   - **Idea**: Allow administrators to assign custom meta-tags to databases (e.g., "Financial Data", "HR", "Legacy Systems") and filter the global dashboard by these tags.
-   - **Value**: Better organizes huge fleets of servers beyond standard "Production/UAT" classifications.
+2. **One-Click Retry Actions 🔄**
+   - **Idea**: Expose a POST endpoint that triggers a backup re-run for a specific host/DB, with a confirmation dialog in the `DatabaseDetailModal`.
+   - **Value**: Transitions the platform from passive monitoring into active incident response.
 
-6. **Granular Role-Based Access Control (RBAC) 🛡️**
-   - **Idea**: Expand the User Management module to support permissions matrices. 
-   - **Value**: Ensure junior admins can only *view* statuses, while senior DBAs can edit tags, manage users, or trigger backup retries.
+3. **Advanced Grouping & Custom Tags 🏷️**
+   - **Idea**: Allow admins to tag databases (e.g., "Financial", "HR", "Legacy") and filter the dashboard by tag.
+   - **Value**: Organises large server fleets beyond the standard Production/UAT/DR classifications.
+
+4. **Granular Role-Based Access Control (RBAC) 🛡️**
+   - **Idea**: Extend User Management with a permissions matrix — read-only viewers vs privileged operators.
+   - **Value**: Junior admins can view statuses only; senior DBAs can trigger retries, manage users, and edit tags.
+
+5. **Scheduled Report Delivery 📧**
+   - **Idea**: Backend-driven cron job that emails a PDF compliance report to configured recipients every Monday morning.
+   - **Value**: Satisfies audit requirements passively — no manual download required.
+
+6. **Backup Size Anomaly Detection 🤖**
+   - **Idea**: Use statistical deviation (e.g., Z-score on historical size data) to flag backups that are suspiciously small or zero — possible sign of a corrupt or empty dump.
+   - **Value**: Catches silent failures that pass a "SUCCESS" status but produce invalid dumps.
 
 ---
 *Built with ❤️ for efficient server monitoring.*
+

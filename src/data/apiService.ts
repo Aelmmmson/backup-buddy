@@ -1,10 +1,21 @@
 import api from '@/lib/api';
-import { DashboardResponse, Database, BackupPhase } from './apiTypes';
+import { DashboardResponse, Database, BackupPhase, ServerHistoryResponse } from './apiTypes';
 
 export type { Database };
 
 export async function fetchDashboardData(): Promise<DashboardResponse> {
   const response = await api.get<DashboardResponse>('/get-dashboard-details-optimized');
+  return response.data;
+}
+
+/**
+ * Fetch full backup history for a specific server/database.
+ * Endpoint: GET /get-server-backup-history/:host/:databaseName
+ */
+export async function fetchServerHistory(host: string, databaseName: string): Promise<ServerHistoryResponse> {
+  const response = await api.get<ServerHistoryResponse>(
+    `/get-server-backup-history/${encodeURIComponent(host)}/${encodeURIComponent(databaseName)}`
+  );
   return response.data;
 }
 

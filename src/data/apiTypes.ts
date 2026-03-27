@@ -48,6 +48,26 @@ export interface DashboardResponse {
   not_backed_up_list: NotBackedUp[];
 }
 
+// History API Types — matches actual GET /get-server-backup-history response
+export interface HistoryBackupItem {
+  id: number;
+  host: string;
+  database_name: string;
+  timestamp: string;           // ISO datetime of the backup run
+  status: string;              // e.g. 'SUCCESSFUL', 'FAILED'
+  message: string | null;
+  log_file: string | null;
+  dump_file_path: string | null;
+  dump_file_exists: boolean | null;
+  dump_file_size_mb: number | null;
+  errors: string[] | null;
+}
+
+export interface ServerHistoryResponse {
+  success: boolean;
+  data: HistoryBackupItem[];   // items live under 'data', not 'history'
+}
+
 // Internal Database Type (mapped from API)
 export interface BackupAttempt {
   timestamp: string;

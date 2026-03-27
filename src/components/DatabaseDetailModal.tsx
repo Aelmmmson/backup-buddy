@@ -186,7 +186,7 @@ function PhaseDetailCard({
             className="w-full justify-between bg-background/50 hover:bg-background/80"
             onClick={() => onViewLogs({
               title: `${label} Logs`,
-              logs: phase.errors!,
+              logs: [...new Set(phase.errors!)],
               isWarning: isComplete || (!isComplete && !isFailed)
             })}
           >
@@ -296,7 +296,7 @@ export function DatabaseDetailModal({
             </DialogHeader>
             <div className="flex-1 min-h-0 overflow-y-auto mt-2 rounded-lg border bg-muted/30 p-4">
               <div className="space-y-2">
-                {viewLogs.logs.map((log, i) => (
+                {[...new Set(viewLogs.logs)].map((log, i) => (
                   <div 
                     key={i} 
                     className={cn(
@@ -378,7 +378,7 @@ function BackupAttemptRow({ attempt, onViewLogs }: { attempt: BackupAttempt; onV
             className="w-full justify-between h-8 px-2 bg-background/50 hover:bg-background/80"
             onClick={() => onViewLogs({
               title: "Attempt Logs",
-              logs: attempt.errorMessages!,
+              logs: [...new Set(attempt.errorMessages!)],
               isWarning: isWarning
             })}
           >

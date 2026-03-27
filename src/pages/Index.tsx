@@ -29,6 +29,7 @@ import {
   Search,
   ArrowUp,
   X,
+  BarChart2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -184,6 +185,16 @@ const Index = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/analytics")}
+                className="hidden sm:flex"
+              >
+                <BarChart2 className="w-4 h-4 mr-2" />
+                Analytics
+              </Button>
+
               <Button
                 variant="ghost"
                 size="sm"
